@@ -24,7 +24,10 @@ export default function Login({ status, canResetPassword }: Props) {
     const [remember, setRemember] = useState(false);
 
     // Passkeys show up in the email field's autofill, or behind the button.
-    const passkey = usePasskeyLogin({ autofill: true, remember });
+    const passkey = usePasskeyLogin({
+        autofill: true,
+        remember: () => remember,
+    });
 
     return (
         <>

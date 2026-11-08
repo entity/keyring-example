@@ -7,7 +7,13 @@ const messages: Record<string, string> = {
     'authenticator-updated': 'Sign-in method updated.',
     'authenticator-removed': 'Sign-in method removed.',
     'code-sent': 'We sent you a new code.',
+    'device-reported':
+        "We've signed that device out. We recommend changing your password now.",
     'device-revoked': 'That device has been signed out.',
+    'password-reset': 'Your password has been reset. Please sign in.',
+    'reset-link-sent':
+        "If that address has an account, we've emailed a link to reset the password.",
+    'signed-out': "You've been signed out. Please sign in again.",
     'sessions-revoked': 'Signed out everywhere else.',
     'password-updated': 'Password updated.',
     'verification-link-sent':

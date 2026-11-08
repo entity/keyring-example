@@ -11,7 +11,7 @@ use Keyring\Devices\DeviceManager;
 use Keyring\Facades\Keyring;
 use Keyring\Models\Authenticator;
 use Keyring\Models\SecurityEvent;
-use Keyring\Session\SessionAssurance;
+use Keyring\Sessions\SessionAssurance;
 
 class SecurityController extends Controller
 {

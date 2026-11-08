@@ -140,7 +140,7 @@ function Code({ challenge }: { challenge: Challenge }) {
 }
 
 function SecurityKey({ challenge }: { challenge: Challenge }) {
-    const { props, useKey } = challenge;
+    const { props, verifyKey } = challenge;
 
     const asked = useRef(false);
 
@@ -148,9 +148,9 @@ function SecurityKey({ challenge }: { challenge: Challenge }) {
     useEffect(() => {
         if (!asked.current) {
             asked.current = true;
-            void useKey();
+            void verifyKey();
         }
-    }, [useKey]);
+    }, [verifyKey]);
 
     return (
         <div className="grid gap-4 text-center">
@@ -163,7 +163,7 @@ function SecurityKey({ challenge }: { challenge: Challenge }) {
             <Button
                 className="w-full"
                 disabled={challenge.form.processing}
-                onClick={() => void useKey()}
+                onClick={() => void verifyKey()}
             >
                 {challenge.form.processing && <Spinner />}
                 Try again
