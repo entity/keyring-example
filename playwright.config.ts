@@ -1,5 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
-import { baseURL, env, port } from './tests/e2e/env';
+import { baseURL, env, port, server } from './tests/e2e/env';
 
 export default defineConfig({
     testDir: 'tests/e2e',
@@ -15,7 +15,7 @@ export default defineConfig({
     webServer: {
         command: 'tests/e2e/serve.sh',
         url: `${baseURL}/login`,
-        env: { ...env, PORT: String(port) },
+        env: { ...env, PORT: String(port), E2E_SERVER: server },
         timeout: 180_000,
         reuseExistingServer: false,
     },

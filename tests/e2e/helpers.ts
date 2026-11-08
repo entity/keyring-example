@@ -6,6 +6,7 @@ import { env } from './env';
 const BASE32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 
 export interface TestUser {
+    name: string;
     email: string;
     password: string;
     /** Set with twoFactor. */
@@ -21,6 +22,7 @@ export interface TestUser {
 export function createUser({ twoFactor = false } = {}): TestUser {
     const id = randomUUID();
     const user: TestUser = {
+        name: `E2E ${id.slice(0, 8)}`,
         email: `e2e-${id}@keyring.test`,
         password: 'password',
         totpSecret: [...randomBytes(32)]
@@ -29,7 +31,7 @@ export function createUser({ twoFactor = false } = {}): TestUser {
         recoveryCodes: [`${id.slice(0, 5)}-first`, `${id.slice(0, 5)}-other`],
     };
 
-    let php = `$user = App\\Models\\User::factory()->create(['email' => '${user.email}']);`;
+    let php = `$user = App\\Models\\User::factory()->create(['name' => '${user.name}', 'email' => '${user.email}']);`;
 
     if (twoFactor) {
         php +=
