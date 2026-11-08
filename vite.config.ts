@@ -5,7 +5,13 @@ import tailwindcss from '@tailwindcss/vite';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
 import { bunny } from 'laravel-vite-plugin/fonts';
+import { fileURLToPath } from 'node:url';
+import { searchForWorkspaceRoot } from 'vite';
 import { defineConfig, lazyPlugins } from 'vite-plus';
+
+// Keyring's browser helpers, straight from the local checkout until the
+// package is published.
+const keyring = fileURLToPath(new URL('../keyring/js/src', import.meta.url));
 
 export default defineConfig({
     plugins: lazyPlugins(() => [
@@ -28,7 +34,14 @@ export default defineConfig({
             formVariants: true,
         }),
     ]),
+    resolve: {
+        alias: { '@entity/keyring': keyring },
+        dedupe: ['react', 'react-dom', '@inertiajs/react', '@inertiajs/core'],
+    },
     server: {
+        fs: {
+            allow: [searchForWorkspaceRoot(process.cwd()), keyring],
+        },
         watch: {
             ignored: [
                 '**/.agents/**',
