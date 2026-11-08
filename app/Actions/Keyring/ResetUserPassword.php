@@ -5,6 +5,7 @@ namespace App\Actions\Keyring;
 use App\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Keyring\Contracts\ResetsUserPasswords;
@@ -22,10 +23,10 @@ class ResetUserPassword implements ResetsUserPasswords
      */
     public function reset(Authenticatable&Model $user, array $input): void
     {
-        Validator::make($input, [
+        $validated = Validator::make($input, [
             'password' => $this->passwordRules($user),
         ])->validate();
 
-        $user->forceFill(['password' => Hash::make($input['password'])])->save();
+        $user->forceFill(['password' => Hash::make(Arr::string($validated, 'password'))])->save();
     }
 }

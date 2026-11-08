@@ -1,29 +1,48 @@
 import { execFileSync } from 'node:child_process';
-import { createHmac, randomUUID } from 'node:crypto';
+import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { expect, type Page } from '@playwright/test';
 import { env } from './env';
 
-export const TOTP_SECRET = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP';
+const BASE32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+
+export interface TestUser {
+    email: string;
+    password: string;
+    /** Set with twoFactor. */
+    totpSecret: string;
+    recoveryCodes: string[];
+}
 
 /**
- * A new password-only user in the test database, so each test starts clean
- * (registering would call the breached-password API).
+ * A new user in the test database, so tests don't share codes or lockouts
+ * (registering would call the breached-password API). With twoFactor, they
+ * also have an authenticator app and recovery codes.
  */
-export function createUser(): { email: string; password: string } {
-    const email = `e2e-${randomUUID()}@keyring.test`;
+export function createUser({ twoFactor = false } = {}): TestUser {
+    const id = randomUUID();
+    const user: TestUser = {
+        email: `e2e-${id}@keyring.test`,
+        password: 'password',
+        totpSecret: [...randomBytes(32)]
+            .map((byte) => BASE32[byte % 32])
+            .join(''),
+        recoveryCodes: [`${id.slice(0, 5)}-first`, `${id.slice(0, 5)}-other`],
+    };
 
-    execFileSync(
-        'php',
-        [
-            'artisan',
-            'tinker',
-            '--execute',
-            `App\\Models\\User::factory()->create(['email' => '${email}']);`,
-        ],
-        { env: { ...process.env, ...env }, stdio: 'ignore' },
-    );
+    let php = `$user = App\\Models\\User::factory()->create(['email' => '${user.email}']);`;
 
-    return { email, password: 'password' };
+    if (twoFactor) {
+        php +=
+            `Keyring\\Models\\Authenticator::factory()->totp('${user.totpSecret}')->default()->for($user, 'authenticatable')->create();` +
+            `Keyring\\Models\\Authenticator::factory()->recoveryCodes(${JSON.stringify(user.recoveryCodes)})->for($user, 'authenticatable')->create();`;
+    }
+
+    execFileSync('php', ['artisan', 'tinker', '--execute', php], {
+        env: { ...process.env, ...env },
+        stdio: 'ignore',
+    });
+
+    return user;
 }
 
 /**
@@ -85,7 +104,7 @@ export async function addKey(
     label: 'Passkey' | 'Security key',
 ): Promise<void> {
     await page.goto('/settings/security');
-    await page.getByRole('button', { name: 'Add' }).click();
+    await page.getByRole('button', { name: 'Add', exact: true }).click();
     await page.getByRole('menuitem', { name: label }).click();
 
     // The first extra sign-in method comes with recovery codes.
@@ -104,11 +123,10 @@ export async function addKey(
 
 /** The current code an authenticator app would show for the secret. */
 export function totp(secret: string, at = Date.now()): string {
-    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
     const bits = secret
         .replace(/=+$/, '')
         .split('')
-        .map((char) => alphabet.indexOf(char).toString(2).padStart(5, '0'))
+        .map((char) => BASE32.indexOf(char).toString(2).padStart(5, '0'))
         .join('');
     const key = Buffer.from(
         bits.match(/.{8}/g)!.map((byte) => parseInt(byte, 2)),
