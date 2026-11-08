@@ -38,10 +38,10 @@ Emails (codes, email change links, security notices) go to `storage/logs/laravel
 
 ## Demo accounts
 
-| Email | Password | Second step |
-|---|---|---|
-| `demo@keyring.test` | `password` | none yet, add one in Settings → Security |
-| `2fa@keyring.test` | `password` | authenticator app with secret `JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP`, recovery codes `demo1-aaaaa` `demo2-bbbbb` `demo3-ccccc` `demo4-ddddd` |
+| Email               | Password   | Second step                                                                                                                              |
+| ------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `demo@keyring.test` | `password` | none yet, add one in Settings → Security                                                                                                 |
+| `2fa@keyring.test`  | `password` | authenticator app with secret `JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP`, recovery codes `demo1-aaaaa` `demo2-bbbbb` `demo3-ccccc` `demo4-ddddd` |
 
 Add that secret to any authenticator app to get codes for the second account. To put both accounts back the way they started:
 
