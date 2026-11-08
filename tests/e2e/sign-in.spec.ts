@@ -5,24 +5,25 @@ import {
     createUser,
     signInWithPassword,
     signOut,
-    TOTP_SECRET,
     totp,
 } from './helpers';
 
 test('signs in with a password and an authenticator app', async ({ page }) => {
-    await signInWithPassword(page, '2fa@keyring.test', 'password');
+    const user = createUser({ twoFactor: true });
+    await signInWithPassword(page, user.email, user.password);
 
     await expect(page).toHaveURL(/\/login\/challenge/);
     await page
         .getByLabel('Code from your authenticator app')
-        .fill(totp(TOTP_SECRET));
+        .fill(totp(user.totpSecret));
     await page.getByRole('button', { name: 'Verify' }).click();
 
     await expect(page).toHaveURL(/\/dashboard/);
 });
 
 test('refuses a wrong authenticator code', async ({ page }) => {
-    await signInWithPassword(page, '2fa@keyring.test', 'password');
+    const user = createUser({ twoFactor: true });
+    await signInWithPassword(page, user.email, user.password);
 
     await page.getByLabel('Code from your authenticator app').fill('000000');
     await page.getByRole('button', { name: 'Verify' }).click();
@@ -34,20 +35,21 @@ test('refuses a wrong authenticator code', async ({ page }) => {
 });
 
 test('signs in with a recovery code instead, once', async ({ page }) => {
-    await signInWithPassword(page, '2fa@keyring.test', 'password');
+    const user = createUser({ twoFactor: true });
+    await signInWithPassword(page, user.email, user.password);
     await page.getByRole('button', { name: 'Try another way' }).click();
     await page.getByRole('button', { name: /Recovery codes/ }).click();
 
-    await page.getByLabel('Recovery code').fill('demo1-aaaaa');
+    await page.getByLabel('Recovery code').fill(user.recoveryCodes[0]);
     await page.getByRole('button', { name: 'Verify' }).click();
     await expect(page).toHaveURL(/\/dashboard/);
 
     // Each code works once.
     await signOut(page);
-    await signInWithPassword(page, '2fa@keyring.test', 'password');
+    await signInWithPassword(page, user.email, user.password);
     await page.getByRole('button', { name: 'Try another way' }).click();
     await page.getByRole('button', { name: /Recovery codes/ }).click();
-    await page.getByLabel('Recovery code').fill('demo1-aaaaa');
+    await page.getByLabel('Recovery code').fill(user.recoveryCodes[0]);
     await page.getByRole('button', { name: 'Verify' }).click();
 
     await expect(page).toHaveURL(/\/login\/challenge/);

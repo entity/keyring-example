@@ -5,6 +5,7 @@ namespace App\Actions\Keyring;
 use App\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;
 use Keyring\Contracts\ValidatesEmailChanges;
 use Keyring\Facades\Keyring;
@@ -22,12 +23,12 @@ class ValidateEmailChange implements ValidatesEmailChanges
      */
     public function validate(Authenticatable&Model $user, array $input): string
     {
-        $input['email'] = Keyring::normalizeUsername((string) ($input['email'] ?? ''));
+        $input['email'] = is_string($input['email'] ?? null) ? Keyring::normalizeUsername($input['email']) : null;
 
-        Validator::make($input, [
+        $validated = Validator::make($input, [
             'email' => ['required', 'string', 'email', 'max:255'],
         ])->validate();
 
-        return $input['email'];
+        return Arr::string($validated, 'email');
     }
 }

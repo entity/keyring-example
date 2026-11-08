@@ -5,6 +5,7 @@ namespace App\Actions\Keyring;
 use App\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Keyring\Contracts\UpdatesUserPasswords;
@@ -23,15 +24,15 @@ class UpdateUserPassword implements UpdatesUserPasswords
      */
     public function update(Authenticatable&Model $user, array $input): void
     {
-        Validator::make($input, [
+        $validated = Validator::make($input, [
             // Covers a session left open on a shared computer. Users who sign
             // in with passkeys only have no password to type.
             'current_password' => filled($user->getAuthPassword())
-                ? ['required', 'string', 'current_password:'.config('keyring.guard')]
+                ? ['required', 'string', 'current_password:'.config()->string('keyring.guard')]
                 : ['nullable'],
             'password' => $this->passwordRules($user),
         ])->validate();
 
-        $user->forceFill(['password' => Hash::make($input['password'])])->save();
+        $user->forceFill(['password' => Hash::make(Arr::string($validated, 'password'))])->save();
     }
 }

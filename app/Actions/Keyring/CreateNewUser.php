@@ -21,7 +21,7 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
-        $input['email'] = Keyring::normalizeUsername((string) ($input['email'] ?? ''));
+        $input['email'] = is_string($input['email'] ?? null) ? Keyring::normalizeUsername($input['email']) : null;
 
         Validator::make($input, [
             'name' => ['required', 'string', 'max:255'],
