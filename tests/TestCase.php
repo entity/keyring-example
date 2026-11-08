@@ -15,5 +15,8 @@ abstract class TestCase extends BaseTestCase
 
         // Don't call the breached-password API from tests.
         config(['keyring.passwords.uncompromised' => false]);
+
+        // Pages render without a Vite build.
+        $this->withoutVite();
     }
 }
