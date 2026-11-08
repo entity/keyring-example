@@ -70,6 +70,13 @@ npx playwright install chromium   # once
 npm run test:browser
 ```
 
-They build the assets and serve the app on `http://localhost:8137` with a throwaway SQLite database (`database/e2e.sqlite`), so your dev database and server are left alone.
+They build the assets and serve the app on `http://localhost:8137` with a throwaway SQLite database (`database/e2e.sqlite`) and their own `.env.e2e`. Before starting, they check that the booted app really uses that database, so your dev database and server are left alone.
+
+To run the same tests under Octane, with one long-lived FrankenPHP worker (the strictest check that nothing leaks from one person's request to the next):
+
+```bash
+php artisan octane:install --server=frankenphp   # once, downloads the server
+npm run test:browser:octane
+```
 
 There's no CI yet: it would need to check out the private Keyring repository next to this one.
