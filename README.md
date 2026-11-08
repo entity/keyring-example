@@ -61,4 +61,15 @@ php artisan example:reset
 - Settings → Profile changes the name directly and the email through Keyring's confirmed flow.
 - The kit's Fortify tests were rewritten against Keyring (`php artisan test`).
 
+## Browser tests
+
+`tests/e2e` drives the real pages in Chromium with Playwright, including passkeys and security keys through Chrome's virtual authenticator:
+
+```bash
+npx playwright install chromium   # once
+npm run test:browser
+```
+
+They build the assets and serve the app on `http://localhost:8137` with a throwaway SQLite database (`database/e2e.sqlite`), so your dev database and server are left alone.
+
 There's no CI yet: it would need to check out the private Keyring repository next to this one.
