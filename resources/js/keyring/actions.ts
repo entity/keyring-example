@@ -6,9 +6,8 @@ import { statusMessage } from '@/keyring/status';
 /**
  * Run one of Keyring's JSON calls from the security page.
  *
- * - 423 means the change needs a fresh verification. The security page sits
- *   behind the same keyring.fresh middleware, so reloading it goes through
- *   the confirm page and comes straight back here afterwards.
+ * - 423 means the change needs a fresh verification: follow Keyring's
+ *   redirect to the confirm page, which comes back here afterwards.
  * - Other errors become a toast (validation errors use their first message).
  * - On success the page's data is reloaded so the lists stay current. Pass
  *   `reload: false` while a dialog still needs its state (a reload remounts
@@ -33,7 +32,7 @@ export async function run<T>(
         return result;
     } catch (error) {
         if (error instanceof KeyringRequestError && error.status === 423) {
-            router.visit(window.location.pathname);
+            router.visit(error.data.redirect);
 
             return null;
         }
