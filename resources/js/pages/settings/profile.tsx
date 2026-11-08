@@ -6,14 +6,12 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { statusMessage } from '@/keyring/status';
 import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
 import type { Auth } from '@/types';
 
 type Props = {
     mustVerifyEmail: boolean;
-    status?: string;
     pendingEmail: {
         email: string;
         confirmed: boolean;
@@ -22,12 +20,11 @@ type Props = {
     } | null;
 };
 
-export default function Profile({
-    mustVerifyEmail,
-    status,
-    pendingEmail,
-}: Props) {
-    const { auth } = usePage<{ auth: Auth }>().props;
+export default function Profile({ mustVerifyEmail, pendingEmail }: Props) {
+    const { auth, statusMessage } = usePage<{
+        auth: Auth;
+        statusMessage: string | null;
+    }>().props;
 
     return (
         <>
@@ -161,9 +158,9 @@ export default function Profile({
                     </Form>
                 )}
 
-                {statusMessage(status) && (
+                {statusMessage && (
                     <p className="text-sm font-medium text-green-600">
-                        {statusMessage(status)}
+                        {statusMessage}
                     </p>
                 )}
             </div>

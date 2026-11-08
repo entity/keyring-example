@@ -115,21 +115,16 @@ export default function SignInMethods({
 
         if (factor === 'passkey' || factor === 'security-key') {
             // Runs the browser ceremony; the first extra factor comes with recovery codes.
-            const result = await run(
-                () => enroll(factor),
-                'authenticator-added',
-                { reload: false },
-            );
+            const result = await run(() => enroll(factor), {
+                reload: false,
+            });
             showCodesOrReload(result?.recoveryCodes);
         } else if (factor === 'recovery') {
             // New codes only replace the old ones once the user says they saved them.
-            const started = await run(
-                () => beginEnrollment('recovery'),
-                undefined,
-                {
-                    reload: false,
-                },
-            );
+            const started = await run(() => beginEnrollment('recovery'), {
+                success: false,
+                reload: false,
+            });
             setRecovery(
                 started
                     ? {
@@ -139,13 +134,10 @@ export default function SignInMethods({
                     : null,
             );
         } else if (factor === 'totp' || factor === 'email-code') {
-            const started = await run(
-                () => beginEnrollment(factor),
-                undefined,
-                {
-                    reload: false,
-                },
-            );
+            const started = await run(() => beginEnrollment(factor), {
+                success: false,
+                reload: false,
+            });
             setPending(
                 started ? { factor, enrollment: started.enrollment } : null,
             );
@@ -262,10 +254,8 @@ function AuthenticatorItem({
                         className="flex gap-2"
                         onSubmit={async (event) => {
                             event.preventDefault();
-                            await run(
-                                () =>
-                                    renameAuthenticator(authenticator.id, name),
-                                'authenticator-updated',
+                            await run(() =>
+                                renameAuthenticator(authenticator.id, name),
                             );
                             setRenaming(false);
                         }}
@@ -317,9 +307,8 @@ function AuthenticatorItem({
                             {!authenticator.isDefault && (
                                 <DropdownMenuItem
                                     onSelect={() =>
-                                        void run(
-                                            () => makeDefault(authenticator.id),
-                                            'authenticator-updated',
+                                        void run(() =>
+                                            makeDefault(authenticator.id),
                                         )
                                     }
                                 >
@@ -331,9 +320,8 @@ function AuthenticatorItem({
                     <DropdownMenuItem
                         variant="destructive"
                         onSelect={() =>
-                            void run(
-                                () => removeAuthenticator(authenticator.id),
-                                'authenticator-removed',
+                            void run(() =>
+                                removeAuthenticator(authenticator.id),
                             )
                         }
                     >
@@ -412,7 +400,6 @@ function ConfirmCodeDialog({
                                     pending.enrollment,
                                     { code },
                                 ),
-                            'authenticator-added',
                             { reload: false },
                         );
                         setProcessing(false);

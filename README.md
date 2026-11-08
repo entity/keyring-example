@@ -56,7 +56,8 @@ php artisan example:reset
 - `App\Providers\KeyringServiceProvider` turns on every factor, a two-step policy once someone has a second method, security emails and risk signals.
 - The kit's page names already match Keyring's (`auth/login`, `auth/challenge`…), so only step-up confirmation is remapped, to the challenge page.
 - New pages: `auth/challenge` (second step and step-up) and `auth/email-change` (where emailed links land). Login gained passkey sign-in.
-- Settings → Security lists sign-in methods, devices and recent activity. It talks to Keyring's JSON routes through `@entity/keyring` (`resources/js/keyring/actions.ts` handles the 423 step-up answer).
+- Settings → Security lists sign-in methods, devices and recent activity. It talks to Keyring's JSON routes through `@entity/keyring` (`resources/js/keyring/actions.ts` handles the 423 step-up answer and shows Keyring's own messages).
+- `HandleInertiaRequests` shares the flashed `status` and its message from `Keyring::statusMessage()`.
 - Settings → Profile changes the name directly and the email through Keyring's confirmed flow.
 - The kit's Fortify tests were rewritten against Keyring (`php artisan test`).
 

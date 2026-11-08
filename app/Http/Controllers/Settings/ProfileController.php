@@ -23,7 +23,6 @@ class ProfileController extends Controller
 
         return Inertia::render('settings/profile', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
-            'status' => $request->session()->get('status'),
             'pendingEmail' => $pending === null ? null : [
                 'email' => $pending->value,
                 'confirmed' => $pending->confirmed_at !== null,
