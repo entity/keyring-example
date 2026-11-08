@@ -34,8 +34,7 @@ export default function RecoveryCodesDialog({
             setSaving(true);
             const saved = await run(
                 () => confirmEnrollment('recovery', recovery.enrollment!),
-                'New recovery codes saved.',
-                { reload: false },
+                { success: 'New recovery codes saved.', reload: false },
             );
             setSaving(false);
 

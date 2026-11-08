@@ -12,7 +12,6 @@ import PasswordInput from '@/components/password-input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { statusMessage } from '@/keyring/status';
 import { edit } from '@/routes/security';
 
 type Props = {
@@ -37,16 +36,14 @@ export default function Security({
     activity,
     assurance,
 }: Props) {
-    const { status } = usePage<{ status?: string | null }>().props;
+    const { statusMessage } = usePage<{ statusMessage: string | null }>().props;
 
     // Keyring's device and password routes flash a status and come back here.
     useEffect(() => {
-        const message = statusMessage(status);
-
-        if (message) {
-            toast.success(message);
+        if (statusMessage) {
+            toast.success(statusMessage);
         }
-    }, [status]);
+    }, [statusMessage]);
 
     return (
         <>

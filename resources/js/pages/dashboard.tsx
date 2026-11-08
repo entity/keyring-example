@@ -9,7 +9,6 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { ago } from '@/components/keyring/sign-in-methods';
-import { statusMessage } from '@/keyring/status';
 import { dashboard } from '@/routes';
 import { edit as editProfile } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
@@ -53,9 +52,9 @@ const tour = [
 ];
 
 export default function Dashboard() {
-    const { keyringAlerts, status } = usePage<{
+    const { keyringAlerts, statusMessage } = usePage<{
         keyringAlerts: KeyringAlert[];
-        status?: string | null;
+        statusMessage: string | null;
     }>().props;
 
     return (
@@ -89,9 +88,9 @@ export default function Dashboard() {
                     </Alert>
                 )}
 
-                {statusMessage(status) && (
+                {statusMessage && (
                     <p className="text-sm font-medium text-green-600">
-                        {statusMessage(status)}
+                        {statusMessage}
                     </p>
                 )}
 
