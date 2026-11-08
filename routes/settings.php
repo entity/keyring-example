@@ -2,9 +2,6 @@
 
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
-/* @chisel-password-confirmation */
-use Illuminate\Auth\Middleware\RequirePassword;
-/* @end-chisel-password-confirmation */
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
@@ -15,26 +12,17 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-    Route::get('settings/security', [SecurityController::class, 'edit'])
-        /* @chisel-password-confirmation */
-        ->middleware(RequirePassword::class)
-        /* @end-chisel-password-confirmation */
-        ->name('security.edit');
-
-    Route::put('settings/password', [SecurityController::class, 'update'])
-        ->middleware('throttle:6,1')
-        ->name('user-password.update');
+    // Changing how someone signs in, or deleting the account, needs a recent
+    // verification. Keyring asks for a second factor when the user has one.
+    Route::middleware('keyring.fresh:15m')->group(function () {
+        Route::get('settings/security', [SecurityController::class, 'edit'])->name('security.edit');
+        Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    });
 
     Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
 });
 
-/* @chisel-passkeys */
-Route::get('.well-known/passkey-endpoints', function () {
-    return response()->json([
-        'enroll' => route('security.edit'),
-        'manage' => route('security.edit'),
-    ]);
-})->name('well-known.passkeys');
-/* @end-chisel-passkeys */
+Route::get('.well-known/passkey-endpoints', fn () => response()->json([
+    'enroll' => route('security.edit'),
+    'manage' => route('security.edit'),
+]))->name('well-known.passkeys');

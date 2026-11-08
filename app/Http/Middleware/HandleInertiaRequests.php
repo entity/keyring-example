@@ -41,6 +41,10 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            // Keyring flashes a status key after changes ("device-revoked"...)
+            // and "was this you?" alerts after signing in.
+            'status' => fn () => $request->session()->get('status'),
+            'keyringAlerts' => fn () => $request->session()->get('keyring.alerts', []),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

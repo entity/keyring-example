@@ -3,23 +3,40 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Keyring\Models\Authenticator;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     /**
-     * Seed the application's database.
+     * The authenticator app secret for the two-factor demo account. Add it to
+     * any authenticator app.
      */
+    public const TOTP_SECRET = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP';
+
+    public const RECOVERY_CODES = ['demo1-aaaaa', 'demo2-bbbbb', 'demo3-ccccc', 'demo4-ddddd'];
+
     public function run(): void
     {
-        // User::factory(10)->create();
-
+        // Password only. Add a passkey or an authenticator app from Settings → Security.
         User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+            'name' => 'Demo User',
+            'email' => 'demo@keyring.test',
+        ]);
+
+        // Already has an authenticator app and recovery codes, so signing in
+        // asks for a second step.
+        $user = User::factory()->create([
+            'name' => 'Two-Factor User',
+            'email' => '2fa@keyring.test',
+        ]);
+
+        Authenticator::factory()->totp(self::TOTP_SECRET)->default()->for($user, 'authenticatable')->create();
+        Authenticator::factory()->recoveryCodes(self::RECOVERY_CODES)->for($user, 'authenticatable')->create();
+
+        $this->command?->table(['Account', 'Password', 'Second factor'], [
+            ['demo@keyring.test', 'password', '-'],
+            ['2fa@keyring.test', 'password', 'TOTP secret '.self::TOTP_SECRET.', recovery codes '.implode(' ', self::RECOVERY_CODES)],
         ]);
     }
 }
