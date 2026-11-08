@@ -4,6 +4,10 @@ namespace Tests\Feature\Settings;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
+use Keyring\Enums\Assurance;
+use Keyring\Models\Authenticator;
+use Keyring\Notifications\ConfirmEmailChange;
 use Tests\TestCase;
 
 class ProfileUpdateTest extends TestCase
@@ -14,25 +18,15 @@ class ProfileUpdateTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $response = $this
-            ->actingAs($user)
-            ->get(route('profile.edit'));
-
-        $response->assertOk();
+        $this->actingAs($user)->get(route('profile.edit'))->assertOk();
     }
 
-    public function test_profile_information_can_be_updated()
+    public function test_the_name_can_be_updated_but_not_the_email()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['email' => 'test@example.com']);
 
-        $response = $this
-            ->actingAs($user)
-            ->patch(route('profile.update'), [
-                'name' => 'Test User',
-                'email' => 'test@example.com',
-            ]);
-
-        $response
+        $this->actingAs($user)
+            ->patch(route('profile.update'), ['name' => 'Test User', 'email' => 'other@example.com'])
             ->assertSessionHasNoErrors()
             ->assertRedirect(route('profile.edit'));
 
@@ -40,60 +34,43 @@ class ProfileUpdateTest extends TestCase
 
         $this->assertSame('Test User', $user->name);
         $this->assertSame('test@example.com', $user->email);
-        $this->assertNull($user->email_verified_at);
     }
 
-    public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged()
+    public function test_changing_the_email_sends_a_confirmation_to_the_new_address()
+    {
+        Notification::fake();
+        $user = User::factory()->create(['email' => 'test@example.com']);
+
+        $this->actingAs($user)->withAssurance(Assurance::AAL1)
+            ->post(route('keyring.email.store'), ['email' => 'new@example.com'])
+            ->assertSessionHas('status', 'email-change-requested');
+
+        Notification::assertSentOnDemand(ConfirmEmailChange::class, fn ($notification, $channels, $notifiable) => $notifiable->routes['mail'] === 'new@example.com');
+        $this->assertSame('test@example.com', $user->refresh()->email);
+    }
+
+    public function test_deleting_the_account_needs_a_recent_verification()
     {
         $user = User::factory()->create();
 
-        $response = $this
-            ->actingAs($user)
-            ->patch(route('profile.update'), [
-                'name' => 'Test User',
-                'email' => $user->email,
-            ]);
+        $this->actingAs($user)->freshAt(now()->subHour())
+            ->delete(route('profile.destroy'))
+            ->assertRedirect(route('keyring.confirm.challenge'));
 
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect(route('profile.edit'));
-
-        $this->assertNotNull($user->refresh()->email_verified_at);
+        $this->assertNotNull($user->fresh());
     }
 
     public function test_user_can_delete_their_account()
     {
         $user = User::factory()->create();
+        Authenticator::factory()->totp()->for($user, 'authenticatable')->create();
 
-        $response = $this
-            ->actingAs($user)
-            ->delete(route('profile.destroy'), [
-                'password' => 'password',
-            ]);
-
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect(route('home'));
+        $this->actingAs($user)->withAssurance(Assurance::AAL2)
+            ->delete(route('profile.destroy'))
+            ->assertRedirect('/');
 
         $this->assertGuest();
         $this->assertNull($user->fresh());
-    }
-
-    public function test_correct_password_must_be_provided_to_delete_account()
-    {
-        $user = User::factory()->create();
-
-        $response = $this
-            ->actingAs($user)
-            ->from(route('profile.edit'))
-            ->delete(route('profile.destroy'), [
-                'password' => 'wrong-password',
-            ]);
-
-        $response
-            ->assertSessionHasErrors('password')
-            ->assertRedirect(route('profile.edit'));
-
-        $this->assertNotNull($user->fresh());
+        $this->assertSame(0, Authenticator::count());
     }
 }

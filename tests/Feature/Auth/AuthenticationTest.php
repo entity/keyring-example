@@ -4,8 +4,10 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\RateLimiter;
-use Laravel\Fortify\Features;
+use Keyring\Enums\Assurance;
+use Keyring\Models\Authenticator;
+use Keyring\Testing\VirtualAuthenticator;
+use PragmaRX\Google2FA\Google2FA;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -14,55 +16,73 @@ class AuthenticationTest extends TestCase
 
     public function test_login_screen_can_be_rendered()
     {
-        $response = $this->get(route('login'));
-
-        $response->assertOk();
+        $this->get(route('login'))->assertOk();
     }
 
-    public function test_users_can_authenticate_using_the_login_screen()
+    public function test_users_can_authenticate_with_just_a_password()
     {
         $user = User::factory()->create();
 
-        $response = $this->post(route('login.store'), [
-            'email' => $user->email,
-            'password' => 'password',
-        ]);
+        $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password'])
+            ->assertRedirect(route('dashboard', absolute: false));
 
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $this->assertAuthenticatedAs($user);
     }
 
-    /* @chisel-2fa */
-    public function test_users_with_two_factor_enabled_are_redirected_to_two_factor_challenge()
+    public function test_users_can_not_authenticate_with_an_invalid_password()
     {
-        $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
+        $user = User::factory()->create();
 
-        Features::twoFactorAuthentication([
-            'confirm' => true,
-            'confirmPassword' => true,
-        ]);
+        $this->post(route('login.store'), ['email' => $user->email, 'password' => 'wrong-password'])
+            ->assertSessionHasErrors('email');
 
-        $user = User::factory()->withTwoFactor()->create();
-
-        $response = $this->post(route('login'), [
-            'email' => $user->email,
-            'password' => 'password',
-        ]);
-
-        $response->assertRedirect(route('two-factor.login'));
-        $response->assertSessionHas('login.id', $user->id);
         $this->assertGuest();
     }
-    /* @end-chisel-2fa */
 
-    public function test_users_can_not_authenticate_with_invalid_password()
+    public function test_users_with_an_authenticator_app_finish_with_a_code()
+    {
+        $user = User::factory()->create();
+        $totp = Authenticator::factory()->totp()->for($user, 'authenticatable')->create();
+
+        $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password'])
+            ->assertRedirect(route('keyring.login.challenge', absolute: false));
+
+        $this->assertGuest();
+
+        $this->post(route('keyring.login.verify', 'totp'), ['code' => app(Google2FA::class)->getCurrentOtp($totp->secret)])
+            ->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_users_can_sign_in_with_a_passkey_alone()
+    {
+        $user = User::factory()->create();
+        $key = new VirtualAuthenticator(origin: config('app.url'));
+
+        $this->actingAs($user)->withAssurance(Assurance::AAL1);
+        $options = $this->postJson(route('keyring.authenticators.store', 'passkey'))->json('enrollment.options');
+        $this->postJson(route('keyring.authenticators.confirm', 'passkey'), ['credential' => $key->register($options)])->assertOk();
+        $this->post(route('logout'));
+
+        $options = $this->getJson(route('keyring.login.options', 'passkey'))->json();
+
+        $this->post(route('keyring.login.factor', 'passkey'), ['credential' => $key->assert($options)])
+            ->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_users_are_rate_limited()
     {
         $user = User::factory()->create();
 
-        $this->post(route('login.store'), [
-            'email' => $user->email,
-            'password' => 'wrong-password',
-        ]);
+        foreach (range(1, 5) as $attempt) {
+            $this->post(route('login.store'), ['email' => $user->email, 'password' => 'wrong-password']);
+        }
+
+        $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password'])
+            ->assertSessionHasErrors('email');
 
         $this->assertGuest();
     }
@@ -71,24 +91,8 @@ class AuthenticationTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user)->post(route('logout'));
-
-        $response->assertRedirect(route('home'));
+        $this->actingAs($user)->post(route('logout'))->assertRedirect('/');
 
         $this->assertGuest();
-    }
-
-    public function test_users_are_rate_limited()
-    {
-        $user = User::factory()->create();
-
-        RateLimiter::increment(md5('login'.implode('|', [$user->email, '127.0.0.1'])), amount: 5);
-
-        $response = $this->post(route('login.store'), [
-            'email' => $user->email,
-            'password' => 'wrong-password',
-        ]);
-
-        $response->assertTooManyRequests();
     }
 }

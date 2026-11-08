@@ -7,7 +7,6 @@ use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
-use Laravel\Fortify\Features;
 use Tests\TestCase;
 
 class EmailVerificationTest extends TestCase
@@ -18,7 +17,6 @@ class EmailVerificationTest extends TestCase
     {
         parent::setUp();
 
-        $this->skipUnlessFortifyHas(Features::emailVerification());
     }
 
     public function test_email_verification_screen_can_be_rendered()
@@ -49,6 +47,7 @@ class EmailVerificationTest extends TestCase
             'verification.verify',
             now()->addMinutes(60),
             ['id' => $user->id, 'hash' => sha1($user->email)],
+            absolute: false, // Keyring checks relative signatures
         );
 
         $response = $this->actingAs($user)->get($verificationUrl);
@@ -69,6 +68,7 @@ class EmailVerificationTest extends TestCase
             'verification.verify',
             now()->addMinutes(60),
             ['id' => $user->id, 'hash' => sha1('wrong-email')],
+            absolute: false, // Keyring checks relative signatures
         );
 
         $this->actingAs($user)->get($verificationUrl);
@@ -87,6 +87,7 @@ class EmailVerificationTest extends TestCase
             'verification.verify',
             now()->addMinutes(60),
             ['id' => 123, 'hash' => sha1($user->email)],
+            absolute: false, // Keyring checks relative signatures
         );
 
         $this->actingAs($user)->get($verificationUrl);
@@ -117,6 +118,7 @@ class EmailVerificationTest extends TestCase
             'verification.verify',
             now()->addMinutes(60),
             ['id' => $user->id, 'hash' => sha1($user->email)],
+            absolute: false, // Keyring checks relative signatures
         );
 
         $this->actingAs($user)->get($verificationUrl)

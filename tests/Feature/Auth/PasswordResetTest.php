@@ -3,10 +3,9 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
-use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
-use Laravel\Fortify\Features;
+use Keyring\Notifications\ResetPassword;
 use Tests\TestCase;
 
 class PasswordResetTest extends TestCase
@@ -17,7 +16,6 @@ class PasswordResetTest extends TestCase
     {
         parent::setUp();
 
-        $this->skipUnlessFortifyHas(Features::resetPasswords());
     }
 
     public function test_reset_password_link_screen_can_be_rendered()
@@ -67,8 +65,8 @@ class PasswordResetTest extends TestCase
             $response = $this->post(route('password.update'), [
                 'token' => $notification->token,
                 'email' => $user->email,
-                'password' => 'password',
-                'password_confirmation' => 'password',
+                'password' => 'a-long-new-passphrase',
+                'password_confirmation' => 'a-long-new-passphrase',
             ]);
 
             $response
@@ -86,8 +84,8 @@ class PasswordResetTest extends TestCase
         $response = $this->post(route('password.update'), [
             'token' => 'invalid-token',
             'email' => $user->email,
-            'password' => 'newpassword123',
-            'password_confirmation' => 'newpassword123',
+            'password' => 'a-long-new-passphrase',
+            'password_confirmation' => 'a-long-new-passphrase',
         ]);
 
         $response->assertSessionHasErrors('email');
