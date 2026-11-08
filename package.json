@@ -9,7 +9,8 @@
         "check": "vp check",
         "check:fix": "vp check --fix",
         "types:check": "tsc --noEmit",
-        "test:browser": "playwright test"
+        "test:browser": "playwright test",
+        "test:browser:octane": "E2E_SERVER=octane playwright test"
     },
     "dependencies": {
         "@inertiajs/react": "^3.0.0",
