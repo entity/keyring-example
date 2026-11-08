@@ -1,4 +1,7 @@
+import { usePasskeyLogin } from '@entity/keyring/react';
 import { Form, Head } from '@inertiajs/react';
+import { KeyRound } from 'lucide-react';
+import { useState } from 'react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
@@ -7,14 +10,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-/* @chisel-registration */
+import { statusMessage } from '@/keyring/status';
 import { register } from '@/routes';
-/* @end-chisel-registration */
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
-/* @chisel-passkeys */
-import PasskeyVerify from '@/components/passkey-verify';
-/* @end-chisel-passkeys */
 
 type Props = {
     status?: string;
@@ -22,13 +21,14 @@ type Props = {
 };
 
 export default function Login({ status, canResetPassword }: Props) {
+    const [remember, setRemember] = useState(false);
+
+    // Passkeys show up in the email field's autofill, or behind the button.
+    const passkey = usePasskeyLogin({ autofill: true, remember });
+
     return (
         <>
             <Head title="Log in" />
-
-            {/* @chisel-passkeys */}
-            <PasskeyVerify />
-            {/* @end-chisel-passkeys */}
 
             <Form
                 {...store.form()}
@@ -47,7 +47,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                     required
                                     autoFocus
                                     tabIndex={1}
-                                    autoComplete="email"
+                                    autoComplete="username webauthn"
                                     placeholder="email@example.com"
                                 />
                                 <InputError message={errors.email} />
@@ -82,6 +82,10 @@ export default function Login({ status, canResetPassword }: Props) {
                                     id="remember"
                                     name="remember"
                                     tabIndex={3}
+                                    checked={remember}
+                                    onCheckedChange={(checked) =>
+                                        setRemember(checked === true)
+                                    }
                                 />
                                 <Label htmlFor="remember">Remember me</Label>
                             </div>
@@ -98,21 +102,41 @@ export default function Login({ status, canResetPassword }: Props) {
                             </Button>
                         </div>
 
-                        {/* @chisel-registration */}
+                        {passkey.supported && (
+                            <div className="grid gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full"
+                                    disabled={passkey.processing}
+                                    onClick={passkey.signIn}
+                                >
+                                    {passkey.processing ? (
+                                        <Spinner />
+                                    ) : (
+                                        <KeyRound />
+                                    )}
+                                    Sign in with a passkey
+                                </Button>
+                                <InputError
+                                    message={passkey.error ?? undefined}
+                                />
+                            </div>
+                        )}
+
                         <div className="text-center text-sm text-muted-foreground">
                             Don't have an account?{' '}
                             <TextLink href={register()} tabIndex={5}>
                                 Sign up
                             </TextLink>
                         </div>
-                        {/* @end-chisel-registration */}
                     </>
                 )}
             </Form>
 
             {status && (
                 <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {status}
+                    {statusMessage(status)}
                 </div>
             )}
         </>

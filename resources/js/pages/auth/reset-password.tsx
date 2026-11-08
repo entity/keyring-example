@@ -10,7 +10,7 @@ import { update } from '@/routes/password';
 type Props = {
     token: string;
     email: string;
-    passwordRules: string;
+    passwordRules?: string;
 };
 
 export default function ResetPassword({ token, email, passwordRules }: Props) {

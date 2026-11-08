@@ -1,7 +1,4 @@
-import { Form, Head, usePage } from '@inertiajs/react';
-/* @chisel-email-verification */
-import { Link } from '@inertiajs/react';
-/* @end-chisel-email-verification */
+import { Form, Head, Link, router, usePage } from '@inertiajs/react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
@@ -9,28 +6,28 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { statusMessage } from '@/keyring/status';
 import { edit } from '@/routes/profile';
-import type { Auth } from '@/types';
-/* @chisel-email-verification */
 import { send } from '@/routes/verification';
-/* @end-chisel-email-verification */
+import type { Auth } from '@/types';
 
-type PageProps = {
-    auth: Auth;
+type Props = {
+    mustVerifyEmail: boolean;
+    status?: string;
+    pendingEmail: {
+        email: string;
+        confirmed: boolean;
+        needsCurrentConfirmation: boolean;
+        expiresAt: string;
+    } | null;
 };
 
-export default function Profile(
-    /* @chisel-email-verification */
-    {
-        mustVerifyEmail,
-        status,
-    }: {
-        mustVerifyEmail: boolean;
-        status?: string;
-    },
-    /* @end-chisel-email-verification */
-) {
-    const { auth } = usePage<PageProps>().props;
+export default function Profile({
+    mustVerifyEmail,
+    status,
+    pendingEmail,
+}: Props) {
+    const { auth } = usePage<{ auth: Auth }>().props;
 
     return (
         <>
@@ -42,21 +39,18 @@ export default function Profile(
                 <Heading
                     variant="small"
                     title="Profile"
-                    description="Update your name and email address"
+                    description="Update your name"
                 />
 
                 <Form
                     {...ProfileController.update.form()}
-                    options={{
-                        preserveScroll: true,
-                    }}
+                    options={{ preserveScroll: true }}
                     className="space-y-6"
                 >
                     {({ processing, errors }) => (
                         <>
                             <div className="grid gap-2">
                                 <Label htmlFor="name">Name</Label>
-
                                 <Input
                                     id="name"
                                     className="mt-1 block w-full"
@@ -66,71 +60,112 @@ export default function Profile(
                                     autoComplete="name"
                                     placeholder="Full name"
                                 />
-
                                 <InputError
                                     className="mt-2"
                                     message={errors.name}
                                 />
                             </div>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
-
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    className="mt-1 block w-full"
-                                    defaultValue={auth.user.email}
-                                    name="email"
-                                    required
-                                    autoComplete="username"
-                                    placeholder="Email address"
-                                />
-
-                                <InputError
-                                    className="mt-2"
-                                    message={errors.email}
-                                />
-                            </div>
-
-                            {/* @chisel-email-verification */}
-                            {mustVerifyEmail &&
-                                auth.user.email_verified_at === null && (
-                                    <div>
-                                        <p className="-mt-4 text-sm text-muted-foreground">
-                                            Your email address is unverified.{' '}
-                                            <Link
-                                                href={send()}
-                                                as="button"
-                                                className="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
-                                            >
-                                                Click here to re-send the
-                                                verification email.
-                                            </Link>
-                                        </p>
-
-                                        {status ===
-                                            'verification-link-sent' && (
-                                            <div className="mt-2 text-sm font-medium text-green-600">
-                                                A new verification link has been
-                                                sent to your email address.
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            {/* @end-chisel-email-verification */}
-
-                            <div className="flex items-center gap-4">
-                                <Button
-                                    disabled={processing}
-                                    data-test="update-profile-button"
-                                >
-                                    Save
-                                </Button>
-                            </div>
+                            <Button
+                                disabled={processing}
+                                data-test="update-profile-button"
+                            >
+                                Save
+                            </Button>
                         </>
                     )}
                 </Form>
+            </div>
+
+            <div className="space-y-6">
+                <Heading
+                    variant="small"
+                    title="Email address"
+                    description="Keyring protects your email: a change has to be confirmed from the new address, and the old one can undo it."
+                />
+
+                <p className="text-sm">
+                    Currently{' '}
+                    <span className="font-medium">{auth.user.email}</span>
+                </p>
+
+                {mustVerifyEmail && auth.user.email_verified_at === null && (
+                    <p className="text-sm text-muted-foreground">
+                        Your email address is unverified.{' '}
+                        <Link
+                            href={send()}
+                            as="button"
+                            className="text-foreground underline underline-offset-4"
+                        >
+                            Re-send the verification email.
+                        </Link>
+                    </p>
+                )}
+
+                {pendingEmail ? (
+                    <div className="space-y-3 rounded-lg border p-4 text-sm">
+                        <p>
+                            Changing to{' '}
+                            <span className="font-medium">
+                                {pendingEmail.email}
+                            </span>
+                            .{' '}
+                            {pendingEmail.confirmed
+                                ? 'The new address is confirmed.'
+                                : 'Waiting for the new address to confirm.'}{' '}
+                            {pendingEmail.needsCurrentConfirmation &&
+                                'Your current address needs to confirm too.'}
+                        </p>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                                router.delete('/user/email', {
+                                    preserveScroll: true,
+                                })
+                            }
+                        >
+                            Cancel the change
+                        </Button>
+                    </div>
+                ) : (
+                    <Form
+                        action="/user/email"
+                        method="post"
+                        options={{ preserveScroll: true }}
+                        resetOnSuccess
+                        className="space-y-6"
+                    >
+                        {({ processing, errors }) => (
+                            <>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="email">
+                                        New email address
+                                    </Label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        name="email"
+                                        required
+                                        autoComplete="email"
+                                        placeholder="new@example.com"
+                                    />
+                                    <InputError message={errors.email} />
+                                </div>
+
+                                <Button disabled={processing}>
+                                    Send confirmation
+                                </Button>
+                            </>
+                        )}
+                    </Form>
+                )}
+
+                {statusMessage(status) && (
+                    <p className="text-sm font-medium text-green-600">
+                        {statusMessage(status)}
+                    </p>
+                )}
             </div>
 
             <DeleteUser />

@@ -10,7 +10,7 @@ import { login } from '@/routes';
 import { store } from '@/routes/register';
 
 type Props = {
-    passwordRules: string;
+    passwordRules?: string;
 };
 
 export default function Register({ passwordRules }: Props) {
