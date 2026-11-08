@@ -3,6 +3,12 @@
 namespace App\Providers;
 
 use App\Actions\Keyring\CreateNewUser;
+use App\Actions\Keyring\ResetUserPassword;
+use App\Actions\Keyring\UpdateUserPassword;
+use App\Actions\Keyring\ValidateEmailChange;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Keyring\Facades\Keyring;
 use Keyring\Factors\EmailCode;
@@ -36,7 +42,14 @@ class KeyringServiceProvider extends ServiceProvider
         // key whenever they have one.
         Keyring::require(Requirement::aal2()->ifEnrolled()->noDowngrade());
 
+        // The account changes are this app's code, in app/Actions/Keyring.
         Keyring::createUsersUsing(CreateNewUser::class);
+        Keyring::resetUserPasswordsUsing(ResetUserPassword::class);
+        Keyring::updateUserPasswordsUsing(UpdateUserPassword::class);
+        Keyring::validateEmailChangesUsing(ValidateEmailChange::class);
+
+        // Registration, password resets and changes, enrollment and emailed links.
+        RateLimiter::for('keyring', fn (Request $request) => Limit::perMinute(6)->by(Keyring::guard()->id() ?: $request->ip()));
 
         // Send every security email. MAIL_MAILER=log writes them to
         // storage/logs/laravel.log, which `composer dev` tails.
