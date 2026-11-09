@@ -2,6 +2,7 @@ import {
     beginEnrollment,
     confirmEnrollment,
     enroll,
+    KeyringRequestError,
     makeDefault,
     removeAuthenticator,
     renameAuthenticator,
@@ -238,11 +239,44 @@ function AuthenticatorItem({
 }) {
     const [renaming, setRenaming] = useState(false);
     const [name, setName] = useState(authenticator.name);
+    const [askPassword, setAskPassword] = useState(false);
+    const [password, setPassword] = useState('');
     const { label, icon: Icon } = factorInfo[authenticator.factor] ?? {
         label: authenticator.factor,
         icon: KeyRound,
     };
     const isRecovery = authenticator.factor === 'recovery';
+
+    // Removing the last second factor needs the password, which must then be
+    // long enough on its own. Keyring answers 422 on `password` without one.
+    async function remove(withPassword?: string) {
+        let needsPassword = false;
+        const removed = await run(
+            () =>
+                removeAuthenticator(authenticator.id, withPassword).catch(
+                    (error: unknown) => {
+                        if (
+                            withPassword === undefined &&
+                            error instanceof KeyringRequestError &&
+                            error.errors.password
+                        ) {
+                            needsPassword = true;
+
+                            return null;
+                        }
+
+                        throw error;
+                    },
+                ),
+            { reload: false },
+        );
+
+        if (needsPassword) {
+            setAskPassword(true);
+        } else if (removed) {
+            router.reload();
+        }
+    }
 
     return (
         <li className="flex items-center gap-3 p-4">
@@ -319,16 +353,62 @@ function AuthenticatorItem({
                     )}
                     <DropdownMenuItem
                         variant="destructive"
-                        onSelect={() =>
-                            void run(() =>
-                                removeAuthenticator(authenticator.id),
-                            )
-                        }
+                        onSelect={() => void remove()}
                     >
                         Remove
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+
+            <Dialog open={askPassword} onOpenChange={setAskPassword}>
+                <DialogContent>
+                    <form
+                        className="space-y-4"
+                        onSubmit={(event) => {
+                            event.preventDefault();
+                            void remove(password);
+                        }}
+                    >
+                        <DialogHeader>
+                            <DialogTitle>
+                                Remove your last second factor?
+                            </DialogTitle>
+                            <DialogDescription>
+                                You'll sign in with just your password, so it
+                                needs to be long enough on its own. Enter it to
+                                go on.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-2">
+                            <Label htmlFor={`password-${authenticator.id}`}>
+                                Password
+                            </Label>
+                            <Input
+                                id={`password-${authenticator.id}`}
+                                type="password"
+                                autoComplete="current-password"
+                                value={password}
+                                onChange={(event) =>
+                                    setPassword(event.target.value)
+                                }
+                                autoFocus
+                            />
+                        </div>
+                        <DialogFooter>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setAskPassword(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button type="submit" variant="destructive">
+                                Remove
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </li>
     );
 }

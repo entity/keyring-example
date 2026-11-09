@@ -19,19 +19,22 @@ export interface TestUser {
  * (registering would call the breached-password API). With twoFactor, they
  * also have an authenticator app and recovery codes.
  */
-export function createUser({ twoFactor = false } = {}): TestUser {
+export function createUser({
+    twoFactor = false,
+    password = 'password',
+} = {}): TestUser {
     const id = randomUUID();
     const user: TestUser = {
         name: `E2E ${id.slice(0, 8)}`,
         email: `e2e-${id}@keyring.test`,
-        password: 'password',
+        password,
         totpSecret: [...randomBytes(32)]
             .map((byte) => BASE32[byte % 32])
             .join(''),
         recoveryCodes: [`${id.slice(0, 5)}-first`, `${id.slice(0, 5)}-other`],
     };
 
-    let php = `$user = App\\Models\\User::factory()->create(['name' => '${user.name}', 'email' => '${user.email}']);`;
+    let php = `$user = App\\Models\\User::factory()->create(['name' => '${user.name}', 'email' => '${user.email}', 'password' => ${JSON.stringify(password)}]);`;
 
     if (twoFactor) {
         php +=
