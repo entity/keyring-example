@@ -34,7 +34,9 @@ class KeyringServiceProvider extends ServiceProvider
             WebAuthn::passkeys(),
             WebAuthn::securityKeys(),
             Totp::class,
-            EmailCode::class,
+            // NIST doesn't count email as a second factor, so Keyring makes
+            // apps opt in to it. The demo shows it anyway.
+            EmailCode::asSecondFactor(),
             RecoveryCodes::class,
         ]);
 
