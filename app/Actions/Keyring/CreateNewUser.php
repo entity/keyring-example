@@ -26,7 +26,7 @@ class CreateNewUser implements CreatesNewUsers
         Validator::make($input, [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique(User::class), new UnreservedAddress],
-            'password' => $this->passwordRules(),
+            'password' => $this->passwordRules(context: [$input['name'] ?? null, $input['email']]),
         ])->validate();
 
         return User::create([
