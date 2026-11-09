@@ -11,9 +11,9 @@ trait PasswordValidationRules
 {
     /**
      * The rules for a new password, at registration, on change and on reset.
-     * Keyring's follow OWASP and NIST: shorter with a second factor, breached
-     * and common passwords refused, no names in them, nothing silently cut
-     * off. Adjust them here, for example:
+     * Keyring's are shorter with a second factor, refuse breached and common
+     * passwords and ones with names in them, and never silently cut one off.
+     * Adjust them here, for example:
      *
      *     PasswordRules::for($user, fn (Password $rule) => $rule->mixedCase())
      *

@@ -55,9 +55,10 @@ class KeyringServiceProvider extends ServiceProvider
 
         // Send every security email. MAIL_MAILER=log writes them to
         // storage/logs/laravel.log, which `composer dev` tails.
-        Keyring::notify();
+        Keyring::sendSecurityNotices();
 
-        Keyring::risk([NewDevice::class, RepeatedFactorFailures::class, SessionFingerprintChanged::class])
+        Keyring::risk()
+            ->signals([NewDevice::class, RepeatedFactorFailures::class, SessionFingerprintChanged::class])
             ->respond(fn (Risk $risk) => match ($risk->level) {
                 Level::Low => Action::allow(),
                 Level::Medium => Action::stepUp(),
