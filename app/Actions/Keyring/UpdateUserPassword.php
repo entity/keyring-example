@@ -9,6 +9,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Keyring\Contracts\UpdatesUserPasswords;
+use Keyring\Rules\CurrentPassword;
 
 class UpdateUserPassword implements UpdatesUserPasswords
 {
@@ -28,7 +29,7 @@ class UpdateUserPassword implements UpdatesUserPasswords
             // Covers a session left open on a shared computer. Users who sign
             // in with passkeys only have no password to type.
             'current_password' => filled($user->getAuthPassword())
-                ? ['required', 'string', 'current_password:'.config()->string('keyring.guard')]
+                ? ['required', 'string', new CurrentPassword($user)]
                 : ['nullable'],
             'password' => $this->passwordRules($user),
         ])->validate();
