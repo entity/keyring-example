@@ -67,22 +67,4 @@ return [
 
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Previous URL
-    |--------------------------------------------------------------------------
-    |
-    | Keyring's pages send "Referrer-Policy: no-referrer" (emailed links carry
-    | a token in their URL), and the browser keeps that policy until the next
-    | full page load. So after signing in, every Inertia request this app
-    | makes has no Referer, and Laravel only remembers the last page for full
-    | page loads. Without this, a validation error on one of the app's own
-    | pages (a name that's too long on Settings, a wrong current password)
-    | would redirect "back" to the login page instead of the form. Keyring
-    | remembers its own pages itself; this covers the rest.
-    |
-    */
-
-    'store_previous_url' => true,
-
 ];
