@@ -37,10 +37,13 @@ touch "$database"
 php artisan migrate --seed --force --no-interaction >/dev/null
 npm run build >/dev/null
 
-# One Octane worker, so every request runs in the same long-lived app: the
-# strictest test for state leaking from one person's request to the next.
+# One Octane worker unless told otherwise, so every request runs in the same
+# long-lived app: the strictest test for state leaking from one person's
+# request to the next. E2E_OCTANE_WORKERS runs several at once, and
+# E2E_OCTANE_MAX_REQUESTS replaces each after that many requests.
 if [[ "${E2E_SERVER:-php}" == octane ]]; then
-    exec php artisan octane:frankenphp --host=localhost --port="$PORT" --workers=1 --max-requests=1000
+    exec php artisan octane:frankenphp --host=localhost --port="$PORT" \
+        --workers="${E2E_OCTANE_WORKERS:-1}" --max-requests="${E2E_OCTANE_MAX_REQUESTS:-1000}"
 fi
 
 # PHP's own server; Laravel's router script finds index.php in the working

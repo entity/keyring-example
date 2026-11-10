@@ -117,4 +117,10 @@ php artisan octane:install --server=frankenphp   # once, downloads the server
 npm run test:browser:octane
 ```
 
+Or with several workers, each replaced after a few requests:
+
+```bash
+E2E_OCTANE_WORKERS=8 E2E_OCTANE_MAX_REQUESTS=20 npm run test:browser:octane
+```
+
 There's no CI yet: it would need to check out the private Keyring repository next to this one.
