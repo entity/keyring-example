@@ -7,6 +7,7 @@ use App\Notifications\Keyring\ConfirmEmailChange;
 use App\Notifications\Keyring\EmailChangeNotice;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Inertia\Inertia;
 use Keyring\Enums\Assurance;
 use Keyring\Models\Authenticator;
 use Tests\TestCase;
@@ -35,6 +36,28 @@ class ProfileUpdateTest extends TestCase
 
         $this->assertSame('Test User', $user->name);
         $this->assertSame('test@example.com', $user->email);
+    }
+
+    /**
+     * After signing in on Keyring's login page, the browser sends no Referer
+     * for the app's own Inertia requests either, and Laravel doesn't remember
+     * those visits as the previous page. config/inertia.php turns that on;
+     * without it "back" would be the login page.
+     */
+    public function test_a_refused_name_returns_to_the_profile_page_without_a_referer()
+    {
+        $user = User::factory()->create();
+
+        $this->get(route('login'))->assertOk();
+
+        $inertia = ['X-Inertia' => 'true', 'X-Requested-With' => 'XMLHttpRequest', 'X-Inertia-Version' => Inertia::getVersion()];
+
+        $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password'], $inertia);
+        $this->get(route('profile.edit'), $inertia)->assertOk();
+
+        $this->patch(route('profile.update'), ['name' => str_repeat('x', 300)], $inertia)
+            ->assertRedirect(route('profile.edit'))
+            ->assertSessionHasErrors('name');
     }
 
     public function test_changing_the_email_sends_a_confirmation_to_the_new_address()

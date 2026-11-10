@@ -96,7 +96,7 @@ php artisan example:reset
 - New pages: `auth/challenge` (second step and step-up) and `auth/email-change` (where emailed links land). Login gained passkey sign-in.
 - Settings → Security lists sign-in methods, devices and recent activity. It talks to Keyring's JSON routes through `@entity/keyring` (`resources/js/keyring/actions.ts` handles the 423 step-up answer and shows Keyring's own messages).
 - `HandleInertiaRequests` shares the flashed `status` and its message from `Keyring::statusMessage()`.
-- `config/inertia.php` turns on `store_previous_url`. Keyring's pages send `Referrer-Policy: no-referrer`, and Laravel doesn't remember Inertia visits as the previous page by itself, so a validation error (a wrong code on the challenge page, say) would otherwise redirect back to whichever page was last loaded in full.
+- `config/inertia.php` turns on `store_previous_url`. Keyring's pages send `Referrer-Policy: no-referrer`, and the browser keeps that policy for every Inertia request until the next full page load. Keyring remembers its own pages as the one to go back to, but a validation error on one of this app's pages (Settings → Profile, say) would otherwise redirect back to the login page.
 - Settings → Profile changes the name directly and the email through Keyring's confirmed flow.
 - The kit's Fortify tests were rewritten against Keyring (`php artisan test`).
 

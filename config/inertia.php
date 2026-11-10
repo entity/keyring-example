@@ -72,11 +72,14 @@ return [
     | Previous URL
     |--------------------------------------------------------------------------
     |
-    | Laravel only remembers the last page for full page loads, not Inertia
-    | visits. Keyring's pages send no Referer header (emailed links carry a
-    | token in their URL), so without this a wrong code on the challenge
-    | page, or any other validation error, redirects "back" to whichever
-    | page was last loaded in full instead of the one with the form.
+    | Keyring's pages send "Referrer-Policy: no-referrer" (emailed links carry
+    | a token in their URL), and the browser keeps that policy until the next
+    | full page load. So after signing in, every Inertia request this app
+    | makes has no Referer, and Laravel only remembers the last page for full
+    | page loads. Without this, a validation error on one of the app's own
+    | pages (a name that's too long on Settings, a wrong current password)
+    | would redirect "back" to the login page instead of the form. Keyring
+    | remembers its own pages itself; this covers the rest.
     |
     */
 
