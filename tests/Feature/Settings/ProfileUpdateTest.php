@@ -3,11 +3,11 @@
 namespace Tests\Feature\Settings;
 
 use App\Models\User;
+use App\Notifications\Keyring\ConfirmEmailChange;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Keyring\Enums\Assurance;
 use Keyring\Models\Authenticator;
-use Keyring\Notifications\ConfirmEmailChange;
 use Tests\TestCase;
 
 class ProfileUpdateTest extends TestCase

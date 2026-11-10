@@ -50,3 +50,6 @@ yarn-error.log
 **/caddy
 frankenphp
 frankenphp-worker.php
+
+# Maizzle writes its IDE type definitions here.
+/.maizzle
