@@ -4,6 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Inertia;
 use Keyring\Enums\Assurance;
 use Keyring\Models\Authenticator;
 use Keyring\Testing\VirtualAuthenticator;
@@ -53,6 +54,30 @@ class AuthenticationTest extends TestCase
             ->assertRedirect(route('dashboard', absolute: false));
 
         $this->assertAuthenticatedAs($user);
+    }
+
+    /**
+     * Keyring's pages send no Referer, and Laravel doesn't remember Inertia
+     * visits as the previous page on its own (config/inertia.php turns that
+     * on), so "back" would be the login page.
+     */
+    public function test_a_wrong_code_returns_to_the_challenge_page_without_a_referer()
+    {
+        $user = User::factory()->create();
+        Authenticator::factory()->totp()->for($user, 'authenticatable')->create();
+
+        $this->get(route('login'))->assertOk();
+
+        $inertia = ['X-Inertia' => 'true', 'X-Requested-With' => 'XMLHttpRequest', 'X-Inertia-Version' => Inertia::getVersion()];
+
+        $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password'], $inertia);
+        $this->get(route('keyring.login.challenge'), $inertia)->assertOk();
+
+        $this->post(route('keyring.login.verify', 'totp'), ['code' => '000000'], $inertia)
+            ->assertRedirect(route('keyring.login.challenge'))
+            ->assertSessionHasErrors('code');
+
+        $this->assertGuest();
     }
 
     public function test_users_can_sign_in_with_a_passkey_alone()

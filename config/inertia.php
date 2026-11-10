@@ -67,4 +67,19 @@ return [
 
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Previous URL
+    |--------------------------------------------------------------------------
+    |
+    | Laravel only remembers the last page for full page loads, not Inertia
+    | visits. Keyring's pages send no Referer header (emailed links carry a
+    | token in their URL), so without this a wrong code on the challenge
+    | page, or any other validation error, redirects "back" to whichever
+    | page was last loaded in full instead of the one with the form.
+    |
+    */
+
+    'store_previous_url' => true,
+
 ];

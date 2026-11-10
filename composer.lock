@@ -666,11 +666,11 @@
         },
         {
             "name": "entity/keyring",
-            "version": "dev-test/concurrency-and-octane",
+            "version": "dev-main",
             "dist": {
                 "type": "path",
                 "url": "../keyring",
-                "reference": "7efd08e0b881a245c12fc9fdb8e89b5822416b33"
+                "reference": "936b92772d928a5985ba4a5d28681ba7607c0f2f"
             },
             "require": {
                 "bacon/bacon-qr-code": "^3.0",
@@ -681,6 +681,7 @@
                 "illuminate/routing": "^13.0",
                 "illuminate/session": "^13.0",
                 "illuminate/support": "^13.0",
+                "paragonie/constant_time_encoding": "^3.0",
                 "php": "^8.5",
                 "pragmarx/google2fa": "^9.0",
                 "web-auth/webauthn-lib": "^5.3"

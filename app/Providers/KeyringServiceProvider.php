@@ -7,9 +7,6 @@ use App\Actions\Keyring\ResetUserPassword;
 use App\Actions\Keyring\UpdateUserPassword;
 use App\Actions\Keyring\ValidateEmailChange;
 use App\Notifications\Keyring as Notifications;
-use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Keyring\Facades\Keyring;
 use Keyring\Factors\EmailCode;
@@ -50,9 +47,6 @@ class KeyringServiceProvider extends ServiceProvider
         Keyring::resetUserPasswordsUsing(ResetUserPassword::class);
         Keyring::updateUserPasswordsUsing(UpdateUserPassword::class);
         Keyring::validateEmailChangesUsing(ValidateEmailChange::class);
-
-        // Registration, password resets and changes, enrollment and emailed links.
-        RateLimiter::for('keyring', fn (Request $request) => Limit::perMinute(6)->by(Keyring::guard()->id() ?: $request->ip()));
 
         // Every email Keyring sends is one of this app's notifications, in
         // app/Notifications/Keyring, built from the Maizzle templates in
