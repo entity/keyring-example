@@ -44,6 +44,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Enrollment Page
+    |--------------------------------------------------------------------------
+    |
+    | Your page for adding a sign-in method. Step-up and the keyring.enrolled
+    | middleware send users there when they don't have what a route needs.
+    | Null answers 403 instead.
+    |
+    */
+
+    'enrollment_url' => null,
+
+    /*
+    |--------------------------------------------------------------------------
     | Everything Else
     |--------------------------------------------------------------------------
     |

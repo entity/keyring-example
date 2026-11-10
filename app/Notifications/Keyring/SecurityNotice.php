@@ -2,6 +2,7 @@
 
 namespace App\Notifications\Keyring;
 
+use DateTimeInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -21,10 +22,12 @@ abstract class SecurityNotice extends Notification implements ShouldQueueAfterCo
     /**
      * Keyring fills in whichever of these the notice has. Some hold what
      * users and browsers sent (a key's name, a user agent), cut to one line,
-     * so escape them for wherever you show them.
+     * so escape them for wherever you show them. $when is $at as text in
+     * the app's timezone: format $at yourself for the user's own.
      */
     public function __construct(
         public string $when,
+        public ?DateTimeInterface $at = null,
         public ?string $device = null,
         public ?string $ip = null,
         public ?string $name = null,
