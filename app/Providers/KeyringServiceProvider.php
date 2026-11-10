@@ -6,6 +6,7 @@ use App\Actions\Keyring\CreateNewUser;
 use App\Actions\Keyring\ResetUserPassword;
 use App\Actions\Keyring\UpdateUserPassword;
 use App\Actions\Keyring\ValidateEmailChange;
+use App\Notifications\Keyring as Notifications;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -53,9 +54,25 @@ class KeyringServiceProvider extends ServiceProvider
         // Registration, password resets and changes, enrollment and emailed links.
         RateLimiter::for('keyring', fn (Request $request) => Limit::perMinute(6)->by(Keyring::guard()->id() ?: $request->ip()));
 
-        // Send every security email. MAIL_MAILER=log writes them to
-        // storage/logs/laravel.log, which `composer dev` tails.
-        Keyring::sendSecurityNotices();
+        // Every email Keyring sends is one of this app's notifications, in
+        // app/Notifications/Keyring, built from the Maizzle templates in
+        // resources/emails. A security notice left out here isn't sent.
+        Keyring::notifications([
+            'verification_code' => Notifications\VerificationCode::class,
+            'confirm_email_change' => Notifications\ConfirmEmailChange::class,
+            'email_change_notice' => Notifications\EmailChangeNotice::class,
+            'email_address_in_use' => Notifications\EmailAddressInUse::class,
+            'new_device' => Notifications\NewDevice::class,
+            'password_changed' => Notifications\PasswordChanged::class,
+            'authenticator_added' => Notifications\AuthenticatorAdded::class,
+            'authenticator_removed' => Notifications\AuthenticatorRemoved::class,
+            'second_factor_failed' => Notifications\SecondFactorFailed::class,
+            'recovery_code_used' => Notifications\RecoveryCodeUsed::class,
+            'suspicious_activity' => Notifications\SuspiciousActivity::class,
+            'clone_suspected' => Notifications\CloneSuspected::class,
+            'email_changed' => Notifications\EmailChanged::class,
+            'email_change_reverted' => Notifications\EmailChangeReverted::class,
+        ]);
 
         Keyring::risk()
             ->signals([NewDevice::class, RepeatedFactorFailures::class, SessionFingerprintChanged::class])
