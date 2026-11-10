@@ -7,9 +7,10 @@ use Illuminate\Notifications\Notification;
 
 /**
  * Sent to the current address during an email change: your email is being
- * changed, with a link to cancel it. Accounts without a second factor must
- * also confirm from here, and get $confirmUrl. The notifiable is that bare
- * address, not your user.
+ * changed, with a link to cancel it. Unless whoever asked proved a second
+ * factor the account has had for a while, the change must be confirmed from
+ * here too, with $confirmUrl. The notifiable is that bare address, not your
+ * user.
  */
 class EmailChangeNotice extends Notification
 {

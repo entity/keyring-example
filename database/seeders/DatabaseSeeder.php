@@ -25,14 +25,19 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Already has an authenticator app and recovery codes, so signing in
-        // asks for a second step.
+        // asks for a second step. They're dated a month back: Keyring only
+        // lets a second factor stand in for the old address's confirmation
+        // of an email change once the account has had it a while
+        // (keyring.email_changes.established_after, a week by default).
         $user = User::factory()->create([
             'name' => 'Two-Factor User',
             'email' => '2fa@keyring.test',
         ]);
 
-        Authenticator::factory()->totp(self::TOTP_SECRET)->default()->for($user, 'authenticatable')->create();
-        Authenticator::factory()->recoveryCodes(self::RECOVERY_CODES)->for($user, 'authenticatable')->create();
+        $established = ['created_at' => now()->subMonth()];
+
+        Authenticator::factory()->totp(self::TOTP_SECRET)->default()->for($user, 'authenticatable')->create($established);
+        Authenticator::factory()->recoveryCodes(self::RECOVERY_CODES)->for($user, 'authenticatable')->create($established);
 
         $this->command?->table(['Account', 'Password', 'Second factor'], [
             ['demo@keyring.test', 'password', '-'],

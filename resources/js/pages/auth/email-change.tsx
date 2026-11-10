@@ -28,7 +28,7 @@ export default function EmailChange({ action, url }: Props) {
                         <p className="text-sm text-muted-foreground">
                             {confirming
                                 ? 'Press the button to confirm this email address change.'
-                                : 'Didn’t ask for this? Undo it to put your old address back. Every session will be signed out, and sign-in methods added since the change will be removed.'}
+                                : 'Didn’t ask for this? Undo it to put your old address back. Every session will be signed out, and sign-in methods added shortly before the change or since will be removed.'}
                         </p>
 
                         <Button
