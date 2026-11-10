@@ -57,9 +57,9 @@ class AuthenticationTest extends TestCase
     }
 
     /**
-     * Keyring's pages send no Referer, and Laravel doesn't remember Inertia
-     * visits as the previous page on its own. Keyring notes each page it
-     * renders, so "back" is the challenge page and not the login page.
+     * Some browsers send no Referer at all, and Laravel doesn't remember
+     * Inertia visits as the previous page on its own. Keyring notes each page
+     * it renders, so "back" is the challenge page and not the login page.
      */
     public function test_a_wrong_code_returns_to_the_challenge_page_without_a_referer()
     {

@@ -3,11 +3,10 @@ import { createUser, signInWithPassword, type TestUser } from './helpers';
 
 /**
  * Sign in and reach Settings the way a person does: one full page load (the
- * login page), then only in-app links. Keyring's pages send
- * `Referrer-Policy: no-referrer`, and the browser keeps that policy until the
- * next full page load, so none of these requests has a Referer. A failed form
- * still has to come back to its own page (`store_previous_url` in
- * config/inertia.php); without that it lands on the dashboard by way of /login.
+ * login page), then only in-app links. The browser keeps the login page's
+ * referrer policy for all of them, so these cover Keyring's choice of policy:
+ * the app still gets a Referer, and a failed form comes back to its own page
+ * instead of landing on the dashboard by way of /login.
  */
 async function signInAndOpenSettings(page: Page, user: TestUser) {
     await signInWithPassword(page, user.email, user.password);
