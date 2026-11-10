@@ -670,7 +670,7 @@
             "dist": {
                 "type": "path",
                 "url": "../keyring",
-                "reference": "394d66e97259e7dfb616fb11c39049df379fca2f"
+                "reference": "128bb27bb7d511c6b494fd7888b38445b7818c61"
             },
             "require": {
                 "bacon/bacon-qr-code": "^3.0",
@@ -684,9 +684,9 @@
                 "web-auth/webauthn-lib": "^5.3.10"
             },
             "require-dev": {
+                "calebdw/phpstan-laravel": "^1.12",
                 "driftingly/rector-laravel": "^2.7",
                 "inertiajs/inertia-laravel": "^3.7",
-                "larastan/larastan": "^3.14",
                 "laravel/pint": "^1.32",
                 "orchestra/testbench": "^11.0",
                 "pestphp/pest": "^5.3",
