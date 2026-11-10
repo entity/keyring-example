@@ -7,7 +7,7 @@ What you can try:
 - Sign in with a password, a passkey (including from the email field's autofill), an authenticator app, an email code or a recovery code.
 - Add and remove sign-in methods from Settings → Security. The first one comes with recovery codes.
 - Step-up: Settings → Security and deleting your account need a verification from the last 15 minutes. If you have a second sign-in method, you have to use it; the password alone isn't enough.
-- Change your email from Settings → Profile. The new address has to confirm, and the old one gets a link to undo the change.
+- Change your email from Settings → Profile. The new address has to confirm, and the old one gets a link to undo the change. The old address has to confirm too, unless you signed in with a second factor the account has had for a week (the two-factor demo account's is dated a month back).
 - See your devices and sign them out, and read the security log.
 - Get a "Was this you?" banner on the dashboard after failed sign-in attempts.
 

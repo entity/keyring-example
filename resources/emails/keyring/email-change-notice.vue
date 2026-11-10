@@ -1,6 +1,7 @@
 <!--
   Sent to the current address during an email change, with a link to cancel
-  it. Accounts without a second factor confirm from here too ($confirmUrl).
+  it. The change is confirmed from here too ($confirmUrl), unless whoever
+  asked proved a second factor the account has had for a while.
 -->
 <template>
     <Shell
