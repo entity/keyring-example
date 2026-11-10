@@ -34,7 +34,44 @@ composer dev                  # http://localhost:8000
 
 Passkeys need a secure context. `http://localhost` counts, so open the app as `localhost`, not `127.0.0.1`. `APP_URL` has to match the address in your browser, because Keyring builds the passkey origin and every emailed link from it.
 
-Emails (codes, email change links, security notices) go to `storage/logs/laravel.log`. `composer dev` shows that log as it's written.
+Emails (codes, email change links, security notices) go to `storage/logs/laravel.log`. `composer dev` shows that log as it's written. To see how they look, open `http://localhost:8000/emails` while running locally: it lists every email Keyring sends and shows each with sample content.
+
+## Emails
+
+Keyring writes no emails of its own. `keyring:install` publishes one notification class per email into `app/Notifications/Keyring`, and `App\Providers\KeyringServiceProvider` says which are sent. This app builds them with [Maizzle](https://maizzle.com):
+
+```
+resources/emails/
+├── components/Shell.vue          # the frame every email shares
+└── keyring/
+    ├── notice.vue                # all ten security notices
+    ├── verification-code.vue
+    ├── confirm-email-change.vue
+    ├── email-change-notice.vue
+    └── email-address-in-use.vue
+```
+
+```bash
+npm run emails        # build them into resources/views/emails/keyring
+npm run emails:dev    # Maizzle's preview server, with hot reload
+```
+
+The templates are Vue files with Tailwind classes. Maizzle inlines the CSS and writes each one out as two Blade views, HTML and plain text, which are committed so the app runs without a build. Anything that changes per email is a Blade variable wrapped in `<Raw>`, which Maizzle passes through untouched:
+
+```vue
+<Heading class="text-2xl font-semibold"><Raw>{{ $subject }}</Raw></Heading>
+```
+
+A notification then returns those views from `toMail()`:
+
+```php
+return (new MailMessage)->subject($this->subject())->view(
+    ['html' => 'emails.keyring.notice', 'text' => 'emails.keyring.text.notice'],
+    ['subject' => $this->subject(), 'intro' => $this->intro(), /* ... */],
+);
+```
+
+Blade escapes what the HTML views print, so a name someone typed for their security key can't add a link to a genuine security email. The ten security notices share one template through `SecurityNotice::toMail()`; each notice class only says its subject and intro.
 
 ## Demo accounts
 
@@ -53,7 +90,8 @@ php artisan example:reset
 
 - `laravel/fortify` and `laravel/chisel` removed. `entity/keyring` added, with its migrations published.
 - `App\Models\User` uses `HasKeyring`. Email and password can only change through Keyring's flows.
-- `App\Providers\KeyringServiceProvider` turns on every factor, a two-step policy once someone has a second method, security emails and risk signals.
+- `App\Providers\KeyringServiceProvider` turns on every factor, a two-step policy once someone has a second method, every security email and risk signals.
+- `app/Notifications/Keyring` holds every email Keyring sends, built from the Maizzle templates in `resources/emails`.
 - The kit's page names already match Keyring's (`auth/login`, `auth/challenge`…), so only step-up confirmation is remapped, to the challenge page.
 - New pages: `auth/challenge` (second step and step-up) and `auth/email-change` (where emailed links land). Login gained passkey sign-in.
 - Settings → Security lists sign-in methods, devices and recent activity. It talks to Keyring's JSON routes through `@entity/keyring` (`resources/js/keyring/actions.ts` handles the 423 step-up answer and shows Keyring's own messages).
