@@ -47,6 +47,8 @@ class HandleInertiaRequests extends Middleware
             'status' => fn () => $request->session()->get('status'),
             'statusMessage' => fn () => Keyring::statusMessage($request->session()->get('status')),
             'keyringAlerts' => fn () => $request->session()->get('keyring.alerts', []),
+            // A recovery code has been used, so it's time to make a new set.
+            'replaceRecoveryCodes' => fn () => (bool) $request->user()?->keyring->shouldReplaceRecoveryCodes(),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

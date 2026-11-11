@@ -10,7 +10,8 @@ export type DeviceRow = {
     name: string | null;
     description: string;
     ip: string | null;
-    location: string | null;
+    /** Empty until the app has a locator (keyring.devices.locator). */
+    location: { country?: string; region?: string; city?: string } | null;
     lastActiveAt: string | null;
     trusted: boolean;
     current: boolean;
@@ -27,7 +28,7 @@ export default function Devices({ devices }: { devices: DeviceRow[] }) {
             <Heading
                 variant="small"
                 title="Devices"
-                description="Browsers signed in to your account. Sign out any you don't recognise."
+                description="Browsers that have signed in to your account. Signing one out ends every session on it."
             />
 
             <ul className="divide-y rounded-lg border">
@@ -46,7 +47,12 @@ export default function Devices({ devices }: { devices: DeviceRow[] }) {
                             </p>
                             <p className="text-xs text-muted-foreground">
                                 {[
-                                    device.location,
+                                    [
+                                        device.location?.city,
+                                        device.location?.country,
+                                    ]
+                                        .filter(Boolean)
+                                        .join(', '),
                                     device.ip,
                                     `active ${ago(device.lastActiveAt)}`,
                                 ]

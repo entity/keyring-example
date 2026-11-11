@@ -22,6 +22,7 @@ import Heading from '@/components/heading';
 import RecoveryCodesDialog from '@/components/keyring/recovery-codes-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -34,6 +35,7 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
@@ -47,16 +49,27 @@ export type AuthenticatorRow = {
     name: string;
     hint?: string;
     remaining?: number;
+    /** Recovery codes: one has been used, so a new set should be made. */
+    replace?: boolean;
     isDefault: boolean;
     createdAt: string | null;
     lastUsedAt: string | null;
 };
 
-const factorInfo: Record<string, { label: string; icon: typeof KeyRound }> = {
+const factorInfo: Record<
+    string,
+    { label: string; icon: typeof KeyRound; note?: string }
+> = {
     passkey: { label: 'Passkey', icon: Fingerprint },
     'security-key': { label: 'Security key', icon: KeyRound },
     totp: { label: 'Authenticator app', icon: Smartphone },
-    'email-code': { label: 'Email code', icon: Mail },
+    // Whoever reads the inbox can reset the password too, so an emailed
+    // code is an extra step at sign in and never a second factor.
+    'email-code': {
+        label: 'Email code',
+        icon: Mail,
+        note: 'An extra step, not a second factor',
+    },
     recovery: { label: 'Recovery codes', icon: ShieldCheck },
 };
 
@@ -93,14 +106,30 @@ export type Recovery = {
 export default function SignInMethods({
     authenticators,
     enrollable,
+    hasSecondFactor,
+    otherSessions,
 }: {
     authenticators: AuthenticatorRow[];
     enrollable: string[];
+    /** Whether there's a second factor recovery codes could back up. */
+    hasSecondFactor: boolean;
+    /** How many other sessions the account has, to offer signing them out. */
+    otherSessions: number;
 }) {
     const [pending, setPending] = useState<Pending>(null);
     const [recovery, setRecovery] = useState<Recovery>(null);
     const [busy, setBusy] = useState(false);
+    const [signOutOthers, setSignOutOthers] = useState(false);
     const webauthn = supportsWebAuthn();
+
+    // Someone else being signed in is often why a method is added or
+    // removed, so the change can end the other sessions with it. Keyring
+    // only does that when asked: it reads `sign_out_others` on the request
+    // that confirms a new method or removes one.
+    const alsoSignOut = signOutOthers && otherSessions > 0;
+    const hasRecoveryCodes = authenticators.some(
+        (authenticator) => authenticator.factor === 'recovery',
+    );
 
     // Reloading remounts the page, so dialogs reload once they close.
     function showCodesOrReload(codes?: string[] | null) {
@@ -116,9 +145,10 @@ export default function SignInMethods({
 
         if (factor === 'passkey' || factor === 'security-key') {
             // Runs the browser ceremony; the first extra factor comes with recovery codes.
-            const result = await run(() => enroll(factor), {
-                reload: false,
-            });
+            const result = await run(
+                () => enroll(factor, { sign_out_others: alsoSignOut }),
+                { reload: false },
+            );
             showCodesOrReload(result?.recoveryCodes);
         } else if (factor === 'recovery') {
             // New codes only replace the old ones once the user says they saved them.
@@ -153,7 +183,7 @@ export default function SignInMethods({
                 <Heading
                     variant="small"
                     title="Sign-in methods"
-                    description="Everything you can use to sign in. With a second method set up, signing in takes two steps."
+                    description="Everything you can use to sign in. With a passkey, security key or authenticator app set up, signing in takes two factors. An emailed code adds a step, but it isn't a second factor."
                 />
 
                 <DropdownMenu modal={false}>
@@ -173,9 +203,14 @@ export default function SignInMethods({
                                         factor !== 'security-key'),
                             )
                             .map((factor) => {
-                                const { label, icon: Icon } = factorInfo[
-                                    factor
-                                ] ?? { label: factor, icon: KeyRound };
+                                const {
+                                    label,
+                                    icon: Icon,
+                                    note,
+                                } = factorInfo[factor] ?? {
+                                    label: factor,
+                                    icon: KeyRound,
+                                };
 
                                 return (
                                     <DropdownMenuItem
@@ -183,10 +218,34 @@ export default function SignInMethods({
                                         onSelect={() => void add(factor)}
                                     >
                                         <Icon />
-                                        {label}
+                                        <span className="grid">
+                                            {label}
+                                            {note && (
+                                                <span className="text-xs text-muted-foreground">
+                                                    {note}
+                                                </span>
+                                            )}
+                                        </span>
                                     </DropdownMenuItem>
                                 );
                             })}
+
+                        {/* Codes back up a second factor, so they're only
+                            on offer once there is one. A set that exists is
+                            replaced from its own row. */}
+                        {enrollable.includes('recovery') &&
+                            hasSecondFactor &&
+                            !hasRecoveryCodes && (
+                                <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                        onSelect={() => void add('recovery')}
+                                    >
+                                        <ShieldCheck />
+                                        Recovery codes
+                                    </DropdownMenuItem>
+                                </>
+                            )}
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
@@ -206,13 +265,30 @@ export default function SignInMethods({
                     <AuthenticatorItem
                         key={authenticator.id}
                         authenticator={authenticator}
+                        signOutOthers={alsoSignOut}
                         onRegenerate={() => void add('recovery')}
                     />
                 ))}
             </ul>
 
+            {otherSessions > 0 && (
+                <div className="flex items-center space-x-3">
+                    <Checkbox
+                        id="sign-out-others"
+                        checked={signOutOthers}
+                        onCheckedChange={(checked) =>
+                            setSignOutOthers(checked === true)
+                        }
+                    />
+                    <Label htmlFor="sign-out-others">
+                        Sign out my other sessions when I add or remove a method
+                    </Label>
+                </div>
+            )}
+
             <ConfirmCodeDialog
                 pending={pending}
+                signOutOthers={alsoSignOut}
                 onDone={(codes) => {
                     setPending(null);
                     showCodesOrReload(codes);
@@ -221,6 +297,7 @@ export default function SignInMethods({
 
             <RecoveryCodesDialog
                 recovery={recovery}
+                signOutOthers={alsoSignOut}
                 onClose={() => {
                     setRecovery(null);
                     router.reload();
@@ -232,16 +309,22 @@ export default function SignInMethods({
 
 function AuthenticatorItem({
     authenticator,
+    signOutOthers,
     onRegenerate,
 }: {
     authenticator: AuthenticatorRow;
+    signOutOthers: boolean;
     onRegenerate: () => void;
 }) {
     const [renaming, setRenaming] = useState(false);
     const [name, setName] = useState(authenticator.name);
     const [askPassword, setAskPassword] = useState(false);
     const [password, setPassword] = useState('');
-    const { label, icon: Icon } = factorInfo[authenticator.factor] ?? {
+    const {
+        label,
+        icon: Icon,
+        note,
+    } = factorInfo[authenticator.factor] ?? {
         label: authenticator.factor,
         icon: KeyRound,
     };
@@ -253,21 +336,21 @@ function AuthenticatorItem({
         let needsPassword = false;
         const removed = await run(
             () =>
-                removeAuthenticator(authenticator.id, withPassword).catch(
-                    (error: unknown) => {
-                        if (
-                            withPassword === undefined &&
-                            error instanceof KeyringRequestError &&
-                            error.errors.password
-                        ) {
-                            needsPassword = true;
+                removeAuthenticator(authenticator.id, withPassword, {
+                    signOutOthers,
+                }).catch((error: unknown) => {
+                    if (
+                        withPassword === undefined &&
+                        error instanceof KeyringRequestError &&
+                        error.errors.password
+                    ) {
+                        needsPassword = true;
 
-                            return null;
-                        }
+                        return null;
+                    }
 
-                        throw error;
-                    },
-                ),
+                    throw error;
+                }),
             { reload: false },
         );
 
@@ -311,12 +394,22 @@ function AuthenticatorItem({
                         {authenticator.isDefault && (
                             <Badge variant="secondary">Default</Badge>
                         )}
+                        {authenticator.replace && (
+                            <Badge variant="destructive">Make a new set</Badge>
+                        )}
                     </p>
                 )}
                 <p className="text-xs text-muted-foreground">
                     {isRecovery
-                        ? `${authenticator.remaining ?? 0} codes left`
-                        : `${label}${authenticator.hint ? ` · ${authenticator.hint}` : ''} · last used ${ago(authenticator.lastUsedAt)}`}
+                        ? `${authenticator.remaining ?? 0} ${authenticator.remaining === 1 ? 'code' : 'codes'} left${authenticator.replace ? ' · one has been used, so make a new set and save it' : ''}`
+                        : [
+                              label,
+                              note,
+                              authenticator.hint,
+                              `last used ${ago(authenticator.lastUsedAt)}`,
+                          ]
+                              .filter(Boolean)
+                              .join(' · ')}
                 </p>
             </div>
 
@@ -419,9 +512,11 @@ function AuthenticatorItem({
  */
 function ConfirmCodeDialog({
     pending,
+    signOutOthers,
     onDone,
 }: {
     pending: Pending;
+    signOutOthers: boolean;
     onDone: (recoveryCodes: string[] | null) => void;
 }) {
     const [code, setCode] = useState('');
@@ -443,7 +538,7 @@ function ConfirmCodeDialog({
                     <DialogDescription>
                         {isTotp
                             ? 'Scan the QR code with your authenticator app, then enter the code it shows.'
-                            : 'We emailed you a code. Enter it to finish.'}
+                            : 'We emailed you a code. Enter it to finish. From then on, signing in asks for a code from your email after your password. That’s an extra step, not a second factor: add an authenticator app, a passkey or a security key for one.'}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -478,7 +573,7 @@ function ConfirmCodeDialog({
                                 confirmEnrollment(
                                     pending.factor,
                                     pending.enrollment,
-                                    { code },
+                                    { code, sign_out_others: signOutOthers },
                                 ),
                             { reload: false },
                         );
