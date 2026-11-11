@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { createUser, signInWithPassword, totp } from './helpers';
+import {
+    createUser,
+    currentTotp,
+    expectAskedForSecondFactor,
+    signInWithPassword,
+} from './helpers';
 
 /**
  * Two people using the app at the same moment. Under Octane the workers keep
@@ -16,12 +21,13 @@ test('keeps two people signing in at once apart', async ({ browser }) => {
     await signInWithPassword(firstPage, first.email, first.password);
     await expect(firstPage).toHaveURL(/\/login\/challenge/);
 
+    // With only a password, the second is sent to add a second factor.
     await signInWithPassword(secondPage, second.email, second.password);
-    await expect(secondPage).toHaveURL(/\/dashboard/);
+    await expectAskedForSecondFactor(secondPage);
 
     await firstPage
         .getByLabel('Code from your authenticator app')
-        .fill(totp(first.totpSecret));
+        .fill(await currentTotp(first.totpSecret));
     await firstPage.getByRole('button', { name: 'Verify' }).click();
     await expect(firstPage).toHaveURL(/\/dashboard/);
 

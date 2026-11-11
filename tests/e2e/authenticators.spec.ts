@@ -1,13 +1,8 @@
 import { expect, type Page, test } from '@playwright/test';
-import { createUser, signInWithPassword, totp, type TestUser } from './helpers';
+import { createUser, signInWithTwoFactors, type TestUser } from './helpers';
 
 async function signInAndManage(page: Page, user: TestUser): Promise<void> {
-    await signInWithPassword(page, user.email, user.password);
-    await page
-        .getByLabel('Code from your authenticator app')
-        .fill(totp(user.totpSecret));
-    await page.getByRole('button', { name: 'Verify' }).click();
-    await expect(page).toHaveURL(/\/dashboard/);
+    await signInWithTwoFactors(page, user);
 
     await page.goto('/settings/security');
     await page

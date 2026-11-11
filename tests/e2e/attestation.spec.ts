@@ -14,6 +14,7 @@ import {
     authenticators,
     configureApp,
     createUser,
+    expectAskedForSecondFactor,
     saveRecoveryCodes,
     signInWithPassword,
     signOut,
@@ -218,8 +219,9 @@ function reportedErrors(): number {
 async function signIn(page: Page) {
     const user = createUser();
 
+    // With only a password, that's the page for adding a second factor.
     await signInWithPassword(page, user.email, user.password);
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expectAskedForSecondFactor(page);
 
     return user;
 }
@@ -239,7 +241,9 @@ async function expectRefused(
     expect(attempt.status).toBe(422);
     expect(attempt.reported).toBe(0);
     await expect(
-        page.getByText("That didn't work. Check it and try again."),
+        page.getByText(
+            "This key couldn't be added. Only certain security keys are accepted here, and this doesn't appear to be one of them.",
+        ),
     ).toBeVisible();
 
     // No recovery codes, the button is ready for another go, and the key is
@@ -377,7 +381,10 @@ test('adds an older u2f key the same way', async ({ page }) => {
     expect(attempt.sent.format).toBe('fido-u2f');
     expect(attempt.status).toBe(200);
 
-    await saveRecoveryCodes(page, user.password);
+    // The key can't check who is holding it, and doesn't need to: the
+    // session proved the password when it signed in, and adding the key
+    // counts as using it.
+    await saveRecoveryCodes(page);
     await expect(securityKeys(page)).toHaveCount(1);
     expect(authenticators(user)).toContainEqual({
         factor: 'security-key',

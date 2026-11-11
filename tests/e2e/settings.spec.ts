@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
-import { createUser, signInWithPassword, type TestUser } from './helpers';
+import { createUser, signInWithTwoFactors, type TestUser } from './helpers';
 
 /**
  * Sign in and reach Settings the way a person does: one full page load (the
@@ -9,8 +9,7 @@ import { createUser, signInWithPassword, type TestUser } from './helpers';
  * instead of landing on the dashboard by way of /login.
  */
 async function signInAndOpenSettings(page: Page, user: TestUser) {
-    await signInWithPassword(page, user.email, user.password);
-    await expect(page).toHaveURL(/\/dashboard/);
+    await signInWithTwoFactors(page, user);
 
     await page.getByRole('button', { name: user.name }).click();
     await page.getByRole('menuitem', { name: 'Settings' }).click();
@@ -18,7 +17,7 @@ async function signInAndOpenSettings(page: Page, user: TestUser) {
 }
 
 test('a refused name stays on the profile page', async ({ page }) => {
-    const user = createUser();
+    const user = createUser({ twoFactor: true });
     await signInAndOpenSettings(page, user);
 
     await page.getByLabel('Name').fill('x'.repeat(300));
@@ -31,7 +30,7 @@ test('a refused name stays on the profile page', async ({ page }) => {
 test('a wrong current password stays on the security page', async ({
     page,
 }) => {
-    const user = createUser();
+    const user = createUser({ twoFactor: true });
     await signInAndOpenSettings(page, user);
 
     await page.getByRole('link', { name: 'Security' }).click();
