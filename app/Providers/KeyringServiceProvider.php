@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
 use App\Actions\Keyring\CreateNewUser;
@@ -56,15 +58,19 @@ class KeyringServiceProvider extends ServiceProvider
             'confirm_email_change' => Notifications\ConfirmEmailChange::class,
             'email_change_notice' => Notifications\EmailChangeNotice::class,
             'email_address_in_use' => Notifications\EmailAddressInUse::class,
-            'new_device' => Notifications\NewDevice::class,
+            'already_registered' => Notifications\AlreadyRegistered::class,
             'password_changed' => Notifications\PasswordChanged::class,
             'authenticator_added' => Notifications\AuthenticatorAdded::class,
             'authenticator_removed' => Notifications\AuthenticatorRemoved::class,
-            'second_factor_failed' => Notifications\SecondFactorFailed::class,
             'recovery_code_used' => Notifications\RecoveryCodeUsed::class,
+            'recovery_codes_generated' => Notifications\RecoveryCodesGenerated::class,
+            'email_changed' => Notifications\EmailChanged::class,
+            'account_locked' => Notifications\AccountLocked::class,
+            // An install leaves these five commented out. The demo sends them.
+            'new_device' => Notifications\NewDevice::class,
+            'second_factor_failed' => Notifications\SecondFactorFailed::class,
             'suspicious_activity' => Notifications\SuspiciousActivity::class,
             'clone_suspected' => Notifications\CloneSuspected::class,
-            'email_changed' => Notifications\EmailChanged::class,
             'email_change_reverted' => Notifications\EmailChangeReverted::class,
         ]);
 

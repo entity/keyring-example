@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Notifications\Keyring;
 
 use Illuminate\Notifications\Messages\MailMessage;
@@ -7,10 +9,9 @@ use Illuminate\Notifications\Notification;
 
 /**
  * Sent to the current address during an email change: your email is being
- * changed, with a link to cancel it. Unless whoever asked proved a second
- * factor the account has had for a while, the change must be confirmed from
- * here too, with $confirmUrl. The notifiable is that bare address, not your
- * user.
+ * changed, with a link to cancel it. Unless the session that asked proved a
+ * second factor the account has had a while, this address must confirm too,
+ * and gets $confirmUrl. The notifiable is that bare address, not your user.
  */
 class EmailChangeNotice extends Notification
 {

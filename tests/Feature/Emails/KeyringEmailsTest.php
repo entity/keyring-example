@@ -3,6 +3,8 @@
 namespace Tests\Feature\Emails;
 
 use App\Models\User;
+use App\Notifications\Keyring\AccountLocked;
+use App\Notifications\Keyring\AlreadyRegistered;
 use App\Notifications\Keyring\AuthenticatorAdded;
 use App\Notifications\Keyring\EmailChangeNotice;
 use App\Notifications\Keyring\NewDevice;
@@ -36,6 +38,7 @@ class KeyringEmailsTest extends TestCase
             'url' => 'https://example.com/link', 'expiresAt' => now()->addDay(),
             'code' => '12345678', 'minutes' => 10, 'enrolling' => false,
             'email' => 'n•••@example.com', 'revertUrl' => 'https://example.com/revert', 'confirmUrl' => null,
+            'loginUrl' => 'https://example.com/login', 'resetUrl' => 'https://example.com/forgot-password',
         ]);
 
         $mail = $this->render($notification->toMail(new User));
@@ -87,6 +90,25 @@ class KeyringEmailsTest extends TestCase
         $this->assertStringNotContainsString('Confirm the change', $without['html']);
         $this->assertStringContainsString('href="https://example.com/confirm"', $with['html']);
         $this->assertStringContainsString('href="https://example.com/revert"', $without['html']);
+    }
+
+    public function test_an_address_that_already_has_an_account_is_sent_to_sign_in_or_reset()
+    {
+        $with = $this->render((new AlreadyRegistered('https://example.com/login', 'https://example.com/forgot-password'))->toMail(new User));
+        $without = $this->render((new AlreadyRegistered('https://example.com/login'))->toMail(new User));
+
+        $this->assertStringContainsString('href="https://example.com/login"', $with['html']);
+        $this->assertStringContainsString('href="https://example.com/forgot-password"', $with['html']);
+        $this->assertStringContainsString('https://example.com/forgot-password', $with['text']);
+        $this->assertStringNotContainsString('Reset your password', $without['html'].$without['text']);
+    }
+
+    public function test_a_locked_account_is_sent_to_reset_its_password()
+    {
+        $mail = $this->render((new AccountLocked(when: 'now', url: 'https://example.com/forgot-password'))->toMail(new User));
+
+        $this->assertStringContainsString('href="https://example.com/forgot-password"', $mail['html']);
+        $this->assertStringContainsString('Reset your password', $mail['text']);
     }
 
     public function test_the_built_views_are_up_to_date_with_their_templates()
