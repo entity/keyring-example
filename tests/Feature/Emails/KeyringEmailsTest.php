@@ -111,6 +111,30 @@ class KeyringEmailsTest extends TestCase
         $this->assertStringContainsString('Reset your password', $mail['text']);
     }
 
+    public function test_the_emails_that_say_who_to_contact_link_to_the_support_contact()
+    {
+        $address = $this->render((new AuthenticatorAdded(when: 'now', contact: 'help@example.com'))->toMail(new User));
+        $page = $this->render((new VerificationCode('12345678', 10, contact: 'https://example.com/support'))->toMail(new User));
+        $phone = $this->render((new EmailChangeNotice('n•••@example.com', 'https://example.com/revert', contact: '<b>0800 000 000</b>'))->toMail(new User));
+        $none = $this->render((new AuthenticatorAdded(when: 'now'))->toMail(new User));
+
+        $this->assertStringContainsString('href="mailto:help@example.com"', $address['html']);
+        $this->assertStringContainsString('contact us: help@example.com', preg_replace('/\s+/', ' ', $address['text']));
+        $this->assertStringContainsString('href="https://example.com/support"', $page['html']);
+        $this->assertStringContainsString('&lt;b&gt;0800 000 000&lt;/b&gt;', $phone['html']);
+        $this->assertStringNotContainsString('href="<b>', $phone['html']);
+        $this->assertStringNotContainsString('contact us', $none['html'].$none['text']);
+    }
+
+    public function test_keyring_hands_the_support_contact_to_the_emails_it_sends()
+    {
+        config(['keyring.support_contact' => 'help@example.com']);
+
+        $notification = Keyring::requiredNotification('password_changed', ['when' => 'now']);
+
+        $this->assertStringContainsString('href="mailto:help@example.com"', $this->render($notification->toMail(new User))['html']);
+    }
+
     public function test_the_built_views_are_up_to_date_with_their_templates()
     {
         foreach (File::files(resource_path('emails/keyring')) as $template) {

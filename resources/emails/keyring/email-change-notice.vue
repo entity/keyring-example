@@ -48,5 +48,6 @@
         >
             This wasn't me
         </Button>
+        <Contact />
     </Shell>
 </template>

@@ -87,6 +87,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Support Contact
+    |--------------------------------------------------------------------------
+    |
+    | Where users can reach you about their account: a page's URL or an email
+    | address. The security emails then end by saying who to contact if
+    | something wasn't them. Null leaves that line out.
+    |
+    */
+
+    'support_contact' => env('KEYRING_SUPPORT_CONTACT', 'support@example.com'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Password Change Page
     |--------------------------------------------------------------------------
     |

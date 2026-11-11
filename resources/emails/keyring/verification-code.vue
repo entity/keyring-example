@@ -32,5 +32,6 @@
             change it.
             <Raw>@endif</Raw>
         </Text>
+        <Contact />
     </Shell>
 </template>

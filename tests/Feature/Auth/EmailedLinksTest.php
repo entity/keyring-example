@@ -35,7 +35,7 @@ class EmailedLinksTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('auth/email-change')
                 ->where('action', 'confirm')
-                ->where('url', url($button))
+                ->where('url', $button)
                 ->where('token', $token));
 
         $this->assertSame('old@example.com', $user->fresh()->email);
@@ -62,7 +62,7 @@ class EmailedLinksTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('auth/email-change')
                 ->where('action', 'revert')
-                ->where('url', url('/'.dirname($revert->path())))
+                ->where('url', '/'.dirname($revert->path()))
                 ->where('token', basename($revert->path())));
 
         $this->post('/'.dirname($revert->path()), ['token' => basename($revert->path())])

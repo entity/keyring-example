@@ -59,7 +59,9 @@
             Wasn't you? Cancel the change and sign out everywhere:
         </p> <div role="separator" style="line-height: 16px;">&zwj;</div> <div><a style="display: inline-block; border-radius: 8px; border: 1px solid #cbd5e1; background-color: rgba(0, 0, 0, 0); padding: 16px 24px; font-size: 14px; line-height: 20px; font-weight: 600; color: #0f172a; text-decoration: none; mso-padding-alt: 0;" href="{{ $revertUrl }}" class="dark-border-slate-600 dark-text-white"><!--[if mso]><i style="mso-font-width: 150%; mso-text-raise: 31px;" hidden>&emsp;</i><![endif]--> <span style="mso-text-raise: 16px;">
             This wasn't me
-        </span> <!--[if mso]><i style="mso-font-width: 150%;" hidden>&emsp;&#8203;</i><![endif]--></a></div></div> <!--[if mso]></td></tr></table><![endif]--> <!--[if mso]><table role="none" cellpadding="0" cellspacing="0" style="width: 100%"><tr><td style="padding: 32px"><![endif]--> <div style="padding: 32px;"><p class="dark-text-slate-400" style="margin: 0; font-size: 12px; line-height: 20px; color: #64748b;">
+        </span> <!--[if mso]><i style="mso-font-width: 150%;" hidden>&emsp;&#8203;</i><![endif]--></a></div> @isset($contact) <p class="dark-text-slate-400" style="margin: 16px 0 0; font-size: 14px; line-height: 24px; color: #64748b;">
+        If this wasn't you and you need help, contact us:
+        @isset($contactUrl) <a href="{{ $contactUrl }}" class="dark-text-white" style="font-weight: 500; color: #0f172a; text-decoration: underline;">{{ $contact }}</a> @else {{ $contact }} @endisset</p> @endisset</div> <!--[if mso]></td></tr></table><![endif]--> <!--[if mso]><table role="none" cellpadding="0" cellspacing="0" style="width: 100%"><tr><td style="padding: 32px"><![endif]--> <div style="padding: 32px;"><p class="dark-text-slate-400" style="margin: 0; font-size: 12px; line-height: 20px; color: #64748b;">
                         You're getting this email because it's about the
                         security of your account.
                     </p></div> <!--[if mso]></td></tr></table><![endif]--></div> <!--[if mso]></td></tr></table><![endif]--></div></body></html>

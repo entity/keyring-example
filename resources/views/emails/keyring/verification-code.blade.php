@@ -48,7 +48,9 @@
             @else
             If you didn't try to sign in, someone may know your password. Please
             change it.
-            @endif</p></div> <!--[if mso]></td></tr></table><![endif]--> <!--[if mso]><table role="none" cellpadding="0" cellspacing="0" style="width: 100%"><tr><td style="padding: 32px"><![endif]--> <div style="padding: 32px;"><p class="dark-text-slate-400" style="margin: 0; font-size: 12px; line-height: 20px; color: #64748b;">
+            @endif</p> @isset($contact) <p class="dark-text-slate-400" style="margin: 16px 0 0; font-size: 14px; line-height: 24px; color: #64748b;">
+        If this wasn't you and you need help, contact us:
+        @isset($contactUrl) <a href="{{ $contactUrl }}" class="dark-text-white" style="font-weight: 500; color: #0f172a; text-decoration: underline;">{{ $contact }}</a> @else {{ $contact }} @endisset</p> @endisset</div> <!--[if mso]></td></tr></table><![endif]--> <!--[if mso]><table role="none" cellpadding="0" cellspacing="0" style="width: 100%"><tr><td style="padding: 32px"><![endif]--> <div style="padding: 32px;"><p class="dark-text-slate-400" style="margin: 0; font-size: 12px; line-height: 20px; color: #64748b;">
                         You're getting this email because it's about the
                         security of your account.
                     </p></div> <!--[if mso]></td></tr></table><![endif]--></div> <!--[if mso]></td></tr></table><![endif]--></div></body></html>
