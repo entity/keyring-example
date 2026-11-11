@@ -1,6 +1,6 @@
 <!--
   Every security notice: "your password was changed", "new sign-in" and the
-  rest. App\Notifications\Keyring\SecurityNotice passes the subject, intro,
+  rest. KeyringServiceProvider::noticeMail() passes the subject, intro,
   detail lines and, for some, a button.
 -->
 <template>

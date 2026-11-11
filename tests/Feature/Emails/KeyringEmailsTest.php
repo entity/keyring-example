@@ -3,16 +3,16 @@
 namespace Tests\Feature\Emails;
 
 use App\Models\User;
-use App\Notifications\Keyring\AccountLocked;
 use App\Notifications\Keyring\AlreadyRegistered;
-use App\Notifications\Keyring\AuthenticatorAdded;
 use App\Notifications\Keyring\EmailChangeNotice;
-use App\Notifications\Keyring\NewDevice;
 use App\Notifications\Keyring\VerificationCode;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\File;
 use Keyring\Facades\Keyring;
 use Keyring\KeyringManager;
+use Keyring\Notifications\AccountLocked;
+use Keyring\Notifications\AuthenticatorAdded;
+use Keyring\Notifications\NewDevice;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
