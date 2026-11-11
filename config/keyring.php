@@ -57,6 +57,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Security Key Attestation
+    |--------------------------------------------------------------------------
+    |
+    | The demo takes any security key. With SECURITY_KEY_ATTESTATION set (see
+    | config/security_keys.php) it only takes keys whose maker vouches for
+    | them, and these are the makers' root certificates it trusts: full paths
+    | to PEM files, separated by commas.
+    |
+    */
+
+    'webauthn' => [
+        'attestation_roots' => array_values(array_filter(explode(',', (string) env('KEYRING_ATTESTATION_ROOTS')))),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Everything Else
     |--------------------------------------------------------------------------
     |

@@ -30,7 +30,7 @@ class KeyringServiceProvider extends ServiceProvider
         Keyring::factors([
             Password::class,
             WebAuthn::passkeys(),
-            WebAuthn::securityKeys(),
+            $this->securityKeys(),
             Totp::class,
             // NIST doesn't count email as a second factor, so Keyring makes
             // apps opt in to it. The demo shows it anyway.
@@ -80,5 +80,26 @@ class KeyringServiceProvider extends ServiceProvider
         // Keyring's pages already match the starter kit's names (auth/login,
         // auth/challenge...). Step-up confirmation reuses the challenge page.
         Keyring::page('confirm', 'auth/challenge');
+    }
+
+    /**
+     * Any security key, as the demo ships. With SECURITY_KEY_ATTESTATION set,
+     * only keys whose maker vouches for them, and with SECURITY_KEY_MODELS
+     * only those models (see config/security_keys.php). Passkeys are left
+     * alone: the ones that sync have no attestation worth checking.
+     */
+    protected function securityKeys(): WebAuthn
+    {
+        $keys = WebAuthn::securityKeys();
+
+        if (! config('security_keys.attestation')) {
+            return $keys;
+        }
+
+        $models = config('security_keys.models');
+
+        return $models === []
+            ? $keys->requireAttestation()
+            : $keys->requireAttestation()->allowOnly($models);
     }
 }

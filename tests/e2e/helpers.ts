@@ -1,7 +1,8 @@
 import { execFileSync } from 'node:child_process';
 import { createHmac, randomBytes, randomUUID } from 'node:crypto';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { expect, type Page } from '@playwright/test';
-import { env } from './env';
+import { baseURL, env, server } from './env';
 
 const BASE32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 
@@ -50,16 +51,82 @@ export function createUser({
     return user;
 }
 
+const ENV_FILE = '.env.e2e';
+const SETTINGS = '# Set by a test, until it calls configureApp() again:';
+
+/**
+ * Run the app with extra settings from here on, as more lines in .env.e2e,
+ * or with none to put it back as serve.sh wrote it. PHP's own server reads
+ * the file on every request. Octane's workers only read it when they start,
+ * so they are reloaded, as a deploy would. Call it while the page is idle: a
+ * request that arrives in the middle of a reload can be left waiting.
+ */
+export async function configureApp(
+    settings: Record<string, string> = {},
+): Promise<void> {
+    const [original] = readFileSync(ENV_FILE, 'utf8').split(SETTINGS);
+    const lines = Object.entries(settings).map(
+        ([name, value]) => `${name}="${value}"`,
+    );
+
+    writeFileSync(
+        ENV_FILE,
+        lines.length
+            ? `${original}${SETTINGS}\n${lines.join('\n')}\n`
+            : original,
+    );
+
+    if (server === 'octane') {
+        execFileSync(
+            'php',
+            ['artisan', 'octane:reload', '--server=frankenphp'],
+            { env: { ...process.env, ...env }, stdio: 'ignore' },
+        );
+    }
+
+    await expect(async () => {
+        const response = await fetch(`${baseURL}/login`, {
+            signal: AbortSignal.timeout(2_000),
+        });
+
+        expect(response.status).toBe(200);
+    }).toPass({ timeout: 20_000 });
+}
+
+/**
+ * The user's sign-in methods as the database has them, with what Keyring
+ * kept about each one's attestation.
+ */
+export function authenticators(
+    user: TestUser,
+): { factor: string; attestation: string | null; aaguid: string | null }[] {
+    const php =
+        `echo Keyring\\Models\\Authenticator::query()->ownedBy(App\\Models\\User::where('email', '${user.email}')->sole())` +
+        `->oldest()->get()->map->only(['factor', 'attestation', 'aaguid'])->toJson();`;
+
+    return JSON.parse(
+        execFileSync('php', ['artisan', 'tinker', '--execute', php], {
+            env: { ...process.env, ...env },
+            encoding: 'utf8',
+        }),
+    );
+}
+
 /**
  * Chrome's virtual authenticator: it answers WebAuthn prompts as if the user
  * touched their key and passed its PIN or biometric. "platform" is a passkey
- * built into the device; "usb" is a security key. Call answer(false) to leave
- * prompts waiting, as if the user hadn't touched anything yet.
+ * built into the device, "usb" is a security key and "u2f" is an older
+ * security key, from before FIDO2. Call answer(false) to leave prompts
+ * waiting, as if the user hadn't touched anything yet, and remove() to
+ * unplug it.
  */
 export async function addVirtualAuthenticator(
     page: Page,
-    kind: 'platform' | 'usb' = 'platform',
-): Promise<{ answer: (enabled: boolean) => Promise<void> }> {
+    kind: 'platform' | 'usb' | 'u2f' = 'platform',
+): Promise<{
+    answer: (enabled: boolean) => Promise<void>;
+    remove: () => Promise<void>;
+}> {
     const cdp = await page.context().newCDPSession(page);
 
     await cdp.send('WebAuthn.enable');
@@ -67,10 +134,10 @@ export async function addVirtualAuthenticator(
         'WebAuthn.addVirtualAuthenticator',
         {
             options: {
-                protocol: 'ctap2',
+                protocol: kind === 'u2f' ? 'u2f' : 'ctap2',
                 transport: kind === 'platform' ? 'internal' : 'usb',
-                hasResidentKey: true,
-                hasUserVerification: true,
+                hasResidentKey: kind !== 'u2f',
+                hasUserVerification: kind !== 'u2f',
                 isUserVerified: true,
                 automaticPresenceSimulation: true,
             },
@@ -82,6 +149,11 @@ export async function addVirtualAuthenticator(
             await cdp.send('WebAuthn.setAutomaticPresenceSimulation', {
                 authenticatorId,
                 enabled,
+            });
+        },
+        remove: async () => {
+            await cdp.send('WebAuthn.removeVirtualAuthenticator', {
+                authenticatorId,
             });
         },
     };
@@ -111,15 +183,31 @@ export async function addKey(
     await page.goto('/settings/security');
     await page.getByRole('button', { name: 'Add', exact: true }).click();
     await page.getByRole('menuitem', { name: label }).click();
+    await saveRecoveryCodes(page);
+}
 
-    // The first extra sign-in method comes with recovery codes.
+/**
+ * Close the recovery codes a first passkey or security key comes with. Give
+ * the password for a key that can't check who is holding it (U2F).
+ */
+export async function saveRecoveryCodes(
+    page: Page,
+    password?: string,
+): Promise<void> {
     await expect(
         page.getByRole('heading', { name: 'Save your recovery codes' }),
     ).toBeVisible();
     await page.getByRole('button', { name: 'I’ve saved these' }).click();
 
     // Saving them may first need a fresh verification with the new key,
-    // which the confirm page asks for on its own. Wait until it's all done.
+    // which the confirm page asks for on its own. A key that only shows it
+    // is there needs the password next to it.
+    if (password !== undefined) {
+        await page.getByLabel('Password', { exact: true }).fill(password);
+        await page.getByRole('button', { name: 'Continue' }).click();
+    }
+
+    // Wait until it's all done.
     await expect(page).toHaveURL(/\/settings\/security/);
     await expect(
         page.getByText('Recovery codes', { exact: true }),
