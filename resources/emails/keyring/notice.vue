@@ -50,5 +50,6 @@
             If this wasn't you, change your password and check your sign-in
             methods straight away.
         </Text>
+        <Contact />
     </Shell>
 </template>

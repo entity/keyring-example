@@ -30,10 +30,14 @@ export default defineConfig({
         for (const file of files.filter((file) => file.includes('/text/'))) {
             writeFileSync(
                 file,
-                readFileSync(file, 'utf8').replace(
-                    /\{\{\s*(.+?)\s*\}\}/g,
-                    '{!! $1 !!}',
-                ),
+                readFileSync(file, 'utf8')
+                    .replace(/\{\{\s*(.+?)\s*\}\}/g, '{!! $1 !!}')
+                    // The support contact reads as its own link in plain
+                    // text, so it isn't followed by the address it links to.
+                    .replace(
+                        /@isset\(\$contactUrl\)[\s\S]*?@endisset/g,
+                        '{!! $contact !!}',
+                    ),
             );
         }
     },

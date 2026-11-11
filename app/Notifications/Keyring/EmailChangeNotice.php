@@ -15,13 +15,17 @@ use Illuminate\Notifications\Notification;
  */
 class EmailChangeNotice extends Notification
 {
+    use ShowsSupportContact;
+
     /**
      * @param  string  $email  the new address, with most of its name hidden
+     * @param  string|null  $contact  "support_contact" from config/keyring.php: a URL or an address
      */
     public function __construct(
         public string $email,
         #[\SensitiveParameter] public string $revertUrl,
         #[\SensitiveParameter] public ?string $confirmUrl = null,
+        public ?string $contact = null,
     ) {}
 
     /**
@@ -38,6 +42,7 @@ class EmailChangeNotice extends Notification
             'email' => $this->email,
             'revertUrl' => $this->revertUrl,
             'confirmUrl' => $this->confirmUrl,
+            ...$this->supportContact(),
         ]);
     }
 }
