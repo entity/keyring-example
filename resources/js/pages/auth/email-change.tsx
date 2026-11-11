@@ -4,14 +4,18 @@ import { Spinner } from '@/components/ui/spinner';
 
 type Props = {
     action: 'confirm' | 'revert';
+    /** Where the button posts: the link's address without its token. */
     url: string;
+    token: string;
 };
 
 /**
  * Emailed links open this page. Nothing changes until the button is pressed,
- * so mail scanners that open links can't confirm or revert anything.
+ * so mail scanners that open links can't confirm or revert anything. The
+ * link carries its token in the URL, and the button posts it in the body,
+ * so the request that acts doesn't put it in a URL a second time.
  */
-export default function EmailChange({ action, url }: Props) {
+export default function EmailChange({ action, url, token }: Props) {
     const confirming = action === 'confirm';
 
     return (
@@ -22,7 +26,12 @@ export default function EmailChange({ action, url }: Props) {
                 }
             />
 
-            <Form action={url} method="post" className="grid gap-6 text-center">
+            <Form
+                action={url}
+                method="post"
+                transform={(data) => ({ ...data, token })}
+                className="grid gap-6 text-center"
+            >
                 {({ processing }) => (
                     <>
                         <p className="text-sm text-muted-foreground">

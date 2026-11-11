@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Keyring\Features;
 
 return [
@@ -27,7 +29,8 @@ return [
     |
     | Signing in and out, challenges and step-up are always on. Add the rest
     | as your app needs them. Each one brings its routes, and anything else
-    | it needs, only once it's here.
+    | it needs, only once it's here. Without the security log, its events
+    | are written to your app's log instead.
     |
     */
 
@@ -44,6 +47,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Registration
+    |--------------------------------------------------------------------------
+    |
+    | Registering answers the same whether or not the address has an account,
+    | and new users sign in once they've followed the link emailed to them.
+    | Set "reveal_taken" to true to say when an address is taken and sign new
+    | users in straight away, which lets anyone check who has an account.
+    |
+    | The demo keeps it off. KEYRING_REVEAL_TAKEN is only here so the browser
+    | tests can show the two pages nobody reaches without it: the "check your
+    | inbox" page and the one the emailed link opens for a signed-in user.
+    |
+    */
+
+    'registration' => [
+        'reveal_taken' => (bool) env('KEYRING_REVEAL_TAKEN', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Enrollment Page
     |--------------------------------------------------------------------------
     |
@@ -51,9 +74,46 @@ return [
     | middleware send users there when they don't have what a route needs.
     | Null answers 403 instead.
     |
+    | Everyone here needs a second factor (KeyringServiceProvider adds
+    | keyring.enrolled to every page), so this is where someone with only a
+    | password lands after signing in.
+    |
     */
 
-    'enrollment_url' => null,
+    'enrollment_url' => '/settings/security',
+
+    // The pages anyone can open stay open to them meanwhile.
+    'enrollment_except' => ['home', 'well-known.passkeys'],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Password Change Page
+    |--------------------------------------------------------------------------
+    |
+    | Where a user who has to choose a new password is sent from every other
+    | page until they have: after Keyring::requirePasswordChange($user), or a
+    | risk response with requirePasswordChange(). The form is on the security
+    | settings page, which says why they were sent there.
+    |
+    */
+
+    'password_change_url' => '/settings/security',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Password Word List
+    |--------------------------------------------------------------------------
+    |
+    | Words a password mustn't be made up of, on top of the app's name and
+    | what Keyring knows about the user (their name and email address). This
+    | is the documented list OWASP ASVS 6.1.2 asks for: the names of the
+    | organisation, its products and its projects.
+    |
+    */
+
+    'passwords' => [
+        'context' => ['Keyring', 'Entity', 'Laravel', 'Starter Kit'],
+    ],
 
     /*
     |--------------------------------------------------------------------------

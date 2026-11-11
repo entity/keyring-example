@@ -17,14 +17,14 @@ class ProfileUpdateTest extends TestCase
 
     public function test_profile_page_is_displayed()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->withSecondFactor()->create();
 
         $this->actingAs($user)->get(route('profile.edit'))->assertOk();
     }
 
     public function test_the_name_can_be_updated_but_not_the_email()
     {
-        $user = User::factory()->create(['email' => 'test@example.com']);
+        $user = User::factory()->withSecondFactor()->create(['email' => 'test@example.com']);
 
         $this->actingAs($user)
             ->patch(route('profile.update'), ['name' => 'Test User', 'email' => 'other@example.com'])
@@ -102,7 +102,7 @@ class ProfileUpdateTest extends TestCase
 
     public function test_deleting_the_account_needs_a_recent_verification()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->withSecondFactor()->create();
 
         $this->actingAs($user)->freshAt(now()->subHour())
             ->delete(route('profile.destroy'))

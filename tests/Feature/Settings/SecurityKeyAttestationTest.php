@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Providers\KeyringServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
+use Inertia\Testing\AssertableInertia as Assert;
 use Keyring\Enums\Assurance;
 use Keyring\Testing\VirtualAuthenticator;
 use Keyring\Testing\VirtualManufacturer;
@@ -50,6 +51,27 @@ class SecurityKeyAttestationTest extends TestCase
 
         $this->add($maker->key(self::YUBIKEY))->assertOk();
         $this->assertSame('basic', $this->user->authenticators()->where('factor', 'security-key')->sole()->attestation);
+    }
+
+    /**
+     * AAL3 takes a key whose maker vouched for it. A key nothing vouches
+     * for is as good as its own word, so the session stays at AAL2.
+     */
+    public function test_only_an_attested_key_takes_the_session_to_aal3()
+    {
+        $this->add(new VirtualAuthenticator)->assertOk();
+
+        $this->get(route('security.edit'))
+            ->assertInertia(fn (Assert $page) => $page->where('assurance', 'AAL2'));
+
+        $this->user->authenticators()->delete();
+        $maker = new VirtualManufacturer;
+        $this->requireAttestation($maker);
+
+        $this->add($maker->key(self::YUBIKEY))->assertOk();
+
+        $this->get(route('security.edit'))
+            ->assertInertia(fn (Assert $page) => $page->where('assurance', 'AAL3'));
     }
 
     public function test_passkeys_need_no_attestation_either_way()

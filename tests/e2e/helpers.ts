@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { createHmac, randomBytes, randomUUID } from 'node:crypto';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { expect, type Page } from '@playwright/test';
 import { baseURL, env, server } from './env';
 
@@ -16,9 +16,30 @@ export interface TestUser {
 }
 
 /**
- * A new user in the test database, so tests don't share codes or lockouts
- * (registering would call the breached-password API). With twoFactor, they
- * also have an authenticator app and recovery codes.
+ * A recovery code in the form Keyring makes them: 26 base32 characters, in
+ * groups of four with the last two on their own. It refuses anything else.
+ */
+function recoveryCode(): string {
+    return [...randomBytes(26)]
+        .map((byte) => BASE32[byte % 32].toLowerCase())
+        .join('')
+        .replace(/(.{4})(?=.)/g, '$1-');
+}
+
+/** Run PHP in the test app, as `php artisan tinker` would, and read what it prints. */
+function php(code: string): string {
+    return execFileSync('php', ['artisan', 'tinker', '--execute', code], {
+        env: { ...process.env, ...env },
+        encoding: 'utf8',
+    });
+}
+
+/**
+ * A new user in the test database, so tests don't share codes or lockouts.
+ * They're made by the factory, so their address is verified: an account
+ * that isn't can't sign in at all. Everyone needs a second factor here, so
+ * without twoFactor signing in lands on Settings → Security, which asks for
+ * one. With it, they have an authenticator app and recovery codes.
  */
 export function createUser({
     twoFactor = false,
@@ -32,23 +53,118 @@ export function createUser({
         totpSecret: [...randomBytes(32)]
             .map((byte) => BASE32[byte % 32])
             .join(''),
-        recoveryCodes: [`${id.slice(0, 5)}-first`, `${id.slice(0, 5)}-other`],
+        recoveryCodes: [recoveryCode(), recoveryCode()],
     };
 
-    let php = `$user = App\\Models\\User::factory()->create(['name' => '${user.name}', 'email' => '${user.email}', 'password' => ${JSON.stringify(password)}]);`;
+    let create = `$user = App\\Models\\User::factory()->create(['name' => '${user.name}', 'email' => '${user.email}', 'password' => ${JSON.stringify(password)}]);`;
 
     if (twoFactor) {
-        php +=
+        create +=
             `Keyring\\Models\\Authenticator::factory()->totp('${user.totpSecret}')->default()->for($user, 'authenticatable')->create();` +
             `Keyring\\Models\\Authenticator::factory()->recoveryCodes(${JSON.stringify(user.recoveryCodes)})->for($user, 'authenticatable')->create();`;
     }
 
-    execFileSync('php', ['artisan', 'tinker', '--execute', php], {
+    php(create);
+
+    return user;
+}
+
+/**
+ * Hold the user until they choose a new password, as an administrator or a
+ * risk response would (Keyring::requirePasswordChange()).
+ */
+export function requirePasswordChange(user: TestUser): void {
+    php(
+        `Keyring\\Facades\\Keyring::requirePasswordChange(App\\Models\\User::where('email', '${user.email}')->sole(), 'Asked for by a browser test.');`,
+    );
+}
+
+const LOG = 'storage/logs/laravel.log';
+
+/**
+ * Where the app's log ends now. The test app "sends" its mail by writing it
+ * there (MAIL_MAILER=log), so this marks the moment before an email.
+ */
+export function mailSentSoFar(): number {
+    return existsSync(LOG) ? statSync(LOG).size : 0;
+}
+
+function mailSince(mark: number): string {
+    return existsSync(LOG)
+        ? readFileSync(LOG).subarray(mark).toString('utf8')
+        : '';
+}
+
+/**
+ * Every different link matching the pattern in the mail sent since the mark,
+ * in the order they were sent. Some emails go out after the response, so
+ * this waits until there are as many as expected.
+ */
+export async function emailedLinks(
+    pattern: RegExp,
+    since: number,
+    count = 1,
+): Promise<string[]> {
+    let links: string[] = [];
+
+    await expect(async () => {
+        const found = mailSince(since).match(new RegExp(pattern.source, 'g'));
+
+        // Each is in the email twice, as HTML and as plain text.
+        links = [
+            ...new Set(
+                (found ?? []).map((link) => link.replaceAll('&amp;', '&')),
+            ),
+        ];
+
+        expect(links.length).toBeGreaterThanOrEqual(count);
+    }).toPass({ timeout: 10_000 });
+
+    return links;
+}
+
+/** The newest link matching the pattern in the mail sent since the mark. */
+export async function emailedLink(
+    pattern: RegExp,
+    since: number,
+): Promise<string> {
+    return (await emailedLinks(pattern, since)).pop()!;
+}
+
+/** The newest eight digit code emailed since the mark, as it was shown. */
+export async function emailedCode(since: number): Promise<string> {
+    let code = '';
+
+    await expect(() => {
+        const found = mailSince(since).match(/\b\d{4} \d{4}\b/g);
+
+        expect(found).not.toBeNull();
+        code = found![found!.length - 1];
+    }).toPass({ timeout: 10_000 });
+
+    return code;
+}
+
+/** Wait for an email saying this to have been sent since the mark. */
+export async function expectEmailed(
+    text: string,
+    since: number,
+): Promise<void> {
+    await expect(() => {
+        expect(mailSince(since)).toContain(text);
+    }).toPass({ timeout: 10_000 });
+}
+
+/**
+ * Start the rate limits over. Keyring allows six requests a minute to its
+ * form routes and emailed links from one address, and every test here comes
+ * from the same one, where real visitors wouldn't.
+ */
+export function forgetRateLimits(): void {
+    execFileSync('php', ['artisan', 'cache:clear'], {
         env: { ...process.env, ...env },
         stdio: 'ignore',
     });
-
-    return user;
 }
 
 const ENV_FILE = '.env.e2e';
@@ -100,15 +216,11 @@ export async function configureApp(
 export function authenticators(
     user: TestUser,
 ): { factor: string; attestation: string | null; aaguid: string | null }[] {
-    const php =
-        `echo Keyring\\Models\\Authenticator::query()->ownedBy(App\\Models\\User::where('email', '${user.email}')->sole())` +
-        `->oldest()->get()->map->only(['factor', 'attestation', 'aaguid'])->toJson();`;
-
     return JSON.parse(
-        execFileSync('php', ['artisan', 'tinker', '--execute', php], {
-            env: { ...process.env, ...env },
-            encoding: 'utf8',
-        }),
+        php(
+            `echo Keyring\\Models\\Authenticator::query()->ownedBy(App\\Models\\User::where('email', '${user.email}')->sole())` +
+                `->oldest()->get()->map->only(['factor', 'attestation', 'aaguid'])->toJson();`,
+        ),
     );
 }
 
@@ -170,6 +282,32 @@ export async function signInWithPassword(
     await page.getByRole('button', { name: 'Log in' }).click();
 }
 
+/**
+ * Sign in with the password, then the authenticator app's code.
+ */
+export async function signInWithTwoFactors(
+    page: Page,
+    user: TestUser,
+): Promise<void> {
+    await signInWithPassword(page, user.email, user.password);
+    await page
+        .getByLabel('Code from your authenticator app')
+        .fill(await currentTotp(user.totpSecret));
+    await page.getByRole('button', { name: 'Verify' }).click();
+    await expect(page).toHaveURL(/\/dashboard/);
+}
+
+/**
+ * Where someone with only a password lands after signing in: the page for
+ * adding a second factor, saying why. Every other page sends them back here.
+ */
+export async function expectAskedForSecondFactor(page: Page): Promise<void> {
+    await expect(page).toHaveURL(/\/settings\/security/);
+    await expect(
+        page.getByText('Add a second factor to carry on'),
+    ).toBeVisible();
+}
+
 /** Forget the session, as if the browser was closed. Keeps the authenticator. */
 export async function signOut(page: Page): Promise<void> {
     await page.context().clearCookies();
@@ -187,25 +325,15 @@ export async function addKey(
 }
 
 /**
- * Close the recovery codes a first passkey or security key comes with. Give
- * the password for a key that can't check who is holding it (U2F).
+ * Close the recovery codes a first passkey or security key comes with.
+ * Adding the key counts as using it, so with the password the session
+ * signed in with there's nothing more to confirm before the page reloads.
  */
-export async function saveRecoveryCodes(
-    page: Page,
-    password?: string,
-): Promise<void> {
+export async function saveRecoveryCodes(page: Page): Promise<void> {
     await expect(
         page.getByRole('heading', { name: 'Save your recovery codes' }),
     ).toBeVisible();
     await page.getByRole('button', { name: 'I’ve saved these' }).click();
-
-    // Saving them may first need a fresh verification with the new key,
-    // which the confirm page asks for on its own. A key that only shows it
-    // is there needs the password next to it.
-    if (password !== undefined) {
-        await page.getByLabel('Password', { exact: true }).fill(password);
-        await page.getByRole('button', { name: 'Continue' }).click();
-    }
 
     // Wait until it's all done.
     await expect(page).toHaveURL(/\/settings\/security/);
@@ -214,7 +342,23 @@ export async function saveRecoveryCodes(
     ).toBeVisible();
 }
 
-/** The current code an authenticator app would show for the secret. */
+/**
+ * The code an authenticator app shows for the secret, once there is time to
+ * type it: the app only takes a code during its own 30 seconds (a window of
+ * 0, as OWASP ASVS 6.5.5 asks), so one read at the very end of them would be
+ * refused by the time it arrived.
+ */
+export async function currentTotp(secret: string): Promise<string> {
+    const left = 30_000 - (Date.now() % 30_000);
+
+    if (left < 3_000) {
+        await new Promise((resolve) => setTimeout(resolve, left + 100));
+    }
+
+    return totp(secret);
+}
+
+/** The code an authenticator app would show for the secret at a moment. */
 export function totp(secret: string, at = Date.now()): string {
     const bits = secret
         .replace(/=+$/, '')

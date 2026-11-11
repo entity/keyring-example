@@ -4,12 +4,15 @@ Laravel's React starter kit with Fortify taken out and [Keyring](../keyring) put
 
 What you can try:
 
-- Sign in with a password, a passkey (including from the email field's autofill), an authenticator app, an email code or a recovery code.
-- Add and remove sign-in methods from Settings → Security. The first one comes with recovery codes.
-- Step-up: Settings → Security and deleting your account need a verification from the last 15 minutes. If you have a second sign-in method, you have to use it; the password alone isn't enough.
+- Register. The form answers the same whether or not the address has an account, and signs nobody in: you get "check your email", follow the link in `storage/logs/laravel.log`, and sign in. An address that already has an account is emailed instead of being told on the form.
+- Sign in with a password, a passkey (including from the email field's autofill), an authenticator app or a recovery code.
+- Add a second factor. Everyone needs one here, so an account with only a password is sent to Settings → Security after signing in, and every other page sends it back there until it has a passkey, a security key or an authenticator app. The first one comes with recovery codes.
+- Add an email code, and see what it is: an extra step after your password, not a second factor. The session stays at AAL1 and the app still asks for a real one.
+- Step-up: Settings → Security and deleting your account need a verification from the last 15 minutes, with the strongest proof the account has. Someone with a security key has to use it to add or remove a sign-in method; a password and an authenticator app's code aren't enough for them.
 - Change your email from Settings → Profile. The new address has to confirm, and the old one gets a link to undo the change. The old address has to confirm too, unless you signed in with a second factor the account has had for a week (the two-factor demo account's is dated a month back).
-- See your devices and sign them out, and read the security log.
-- Get a "Was this you?" banner on the dashboard after failed sign-in attempts.
+- See your devices and your sessions, end one or sign out everywhere else (also while adding or removing a sign-in method, with the checkbox), and read the security log.
+- Get a "Was this you?" banner on the dashboard after failed sign-in attempts, and a reminder to make new recovery codes once one has been used.
+- Be made to change your password: `php artisan tinker --execute 'Keyring\Facades\Keyring::requirePasswordChange(App\Models\User::firstWhere("email", "2fa@keyring.test"), "Demo");'`, then sign in. Every page sends you to Settings → Security until you have.
 
 ## Setup
 
@@ -32,6 +35,10 @@ php artisan migrate --seed
 composer dev                  # http://localhost:8000
 ```
 
+The app hashes passwords with argon2id (`HASH_DRIVER` in `.env.example`). If your database has accounts from when it used bcrypt, either set `HASH_VERIFY=false`, so they're rehashed as they sign in, or run `php artisan example:reset`. That command is also how to get the demo accounts' recovery codes in the form Keyring makes them now: older, shorter codes are no longer accepted.
+
+Keyring clears out old devices, sessions, email changes and log entries with `keyring:prune`, which it adds to Laravel's scheduler itself (daily at 03:00, see `php artisan schedule:list`). It only runs where the scheduler does: `php artisan schedule:work` locally, or the usual cron entry on a server.
+
 Passkeys need a secure context. `http://localhost` counts, so open the app as `localhost`, not `127.0.0.1`. `APP_URL` has to match the address in your browser, because Keyring builds the passkey origin and every emailed link from it.
 
 Emails (codes, email change links, security notices) go to `storage/logs/laravel.log`. `composer dev` shows that log as it's written. To see how they look, open `http://localhost:8000/emails` while running locally: it lists every email Keyring sends and shows each with sample content.
@@ -44,11 +51,12 @@ Keyring writes no emails of its own. `keyring:install` publishes one notificatio
 resources/emails/
 ├── components/Shell.vue          # the frame every email shares
 └── keyring/
-    ├── notice.vue                # all ten security notices
+    ├── notice.vue                # all twelve security notices
     ├── verification-code.vue
     ├── confirm-email-change.vue
     ├── email-change-notice.vue
-    └── email-address-in-use.vue
+    ├── email-address-in-use.vue
+    └── already-registered.vue
 ```
 
 ```bash
@@ -71,16 +79,16 @@ return (new MailMessage)->subject($this->subject())->view(
 );
 ```
 
-Blade escapes what the HTML views print, so a name someone typed for their security key can't add a link to a genuine security email. The ten security notices share one template through `SecurityNotice::toMail()`; each notice class only says its subject and intro.
+Blade escapes what the HTML views print, so a name someone typed for their security key can't add a link to a genuine security email. The twelve security notices share one template through `SecurityNotice::toMail()`; each notice class only says its subject and intro.
 
 ## Demo accounts
 
-| Email               | Password   | Second step                                                                                                                              |
-| ------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `demo@keyring.test` | `password` | none yet, add one in Settings → Security                                                                                                 |
-| `2fa@keyring.test`  | `password` | authenticator app with secret `JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP`, recovery codes `demo1-aaaaa` `demo2-bbbbb` `demo3-ccccc` `demo4-ddddd` |
+| Email               | Password   | Second step                                                                                                                                            |
+| ------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `demo@keyring.test` | `password` | none yet: signing in takes you to Settings → Security to add one                                                                                       |
+| `2fa@keyring.test`  | `password` | authenticator app with secret `JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP`, recovery codes `demo-code-aaaa-aaaa-aaaa-aaaa-aa` and the same with `b`, `c` and `d` |
 
-Add that secret to any authenticator app to get codes for the second account. To put both accounts back the way they started:
+Add that secret to any authenticator app to get codes for the second account. A code works during its own 30 seconds only, so the phone's clock has to be right. Recovery codes are 26 characters, typed with or without the dashes. To put both accounts back the way they started:
 
 ```bash
 php artisan example:reset
@@ -90,14 +98,35 @@ php artisan example:reset
 
 - `laravel/fortify` and `laravel/chisel` removed. `entity/keyring` added, with its migrations published.
 - `App\Models\User` uses `HasKeyring`. Email and password can only change through Keyring's flows.
-- `App\Providers\KeyringServiceProvider` turns on every factor, a two-step policy once someone has a second method, every security email and risk signals.
+- `App\Providers\KeyringServiceProvider` turns on every factor, a two-factor policy once someone has a second factor, the `keyring.enrolled` middleware that makes everyone add one, every security email and risk signals.
+- `config/keyring.php` has the features, the page people are sent to for a second factor or a new password (both `/settings/security`), and the list of words a password mustn't be made up of.
 - `app/Notifications/Keyring` holds every email Keyring sends, built from the Maizzle templates in `resources/emails`.
 - The kit's page names already match Keyring's (`auth/login`, `auth/challenge`…), so only step-up confirmation is remapped, to the challenge page.
-- New pages: `auth/challenge` (second step and step-up) and `auth/email-change` (where emailed links land). Login gained passkey sign-in.
-- Settings → Security lists sign-in methods, devices and recent activity. It talks to Keyring's JSON routes through `@entity/keyring` (`resources/js/keyring/actions.ts` handles the 423 step-up answer and shows Keyring's own messages).
+- New pages: `auth/challenge` (second step and step-up), and the pages emailed links open, each with one button that posts the link's token or signature in the body: `auth/email-change`, `auth/device-report` and `auth/email-verification`. Login gained passkey sign-in, and shows Keyring's message for whatever sent you there.
+- Settings → Security lists sign-in methods, devices, sessions and recent activity. It talks to Keyring's JSON routes through `@entity/keyring` (`resources/js/keyring/actions.ts` handles the 423 step-up answer and shows Keyring's own messages).
 - `HandleInertiaRequests` shares the flashed `status` and its message from `Keyring::statusMessage()`.
 - Settings → Profile changes the name directly and the email through Keyring's confirmed flow.
 - The kit's Fortify tests were rewritten against Keyring (`php artisan test`).
+
+## OWASP ASVS
+
+Keyring's docs have a page on what to turn on for each level of [OWASP ASVS 5.0.0](https://github.com/OWASP/ASVS/tree/v5.0.0_release/5.0), chapters V6 and V7. This app is set up for Level 2 as far as configuration goes:
+
+|                                                                                                          | Where                                                                                    |
+| -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| A second factor for everyone (6.3.3)                                                                     | `keyring.enrolled` in `KeyringServiceProvider`, `enrollment_url` in `config/keyring.php` |
+| Passwords of 64 characters and more (6.2.9)                                                              | `HASH_DRIVER=argon2id`                                                                   |
+| Authenticator app codes good for 30 seconds (6.5.5)                                                      | `Totp` with `window` 0 in `KeyringServiceProvider`                                       |
+| Registration, sign in and password resets that don't say who has an account (6.3.8)                      | `registration.reveal_taken` left off                                                     |
+| A list of words passwords mustn't be made up of (6.1.2, 6.2.11)                                          | `passwords.context` in `config/keyring.php`                                              |
+| An inactivity timeout and an overall one (7.3.1, 7.3.2)                                                  | Keyring's defaults: two hours unused, 30 days in all                                     |
+| Seeing and ending sessions, and the offer to end the others when a sign-in method changes (7.4.3, 7.5.2) | Settings → Security                                                                      |
+| Emails about changes and suspicious sign ins (6.3.5, 6.3.7)                                              | every notice registered in `KeyringServiceProvider`                                      |
+| The security log, pruned daily                                                                           | `Features::securityLog()`, and Laravel's scheduler                                       |
+
+`tests/Feature/KeyringConformanceTest.php` runs Keyring's own conformance suite against this setup.
+
+What a demo can't be, and a real app still has to do: serve over HTTPS (with `SESSION_SECURE_COOKIE=true`, which also gives Keyring's cookies their `__Host-` names), leave out the seeded accounts and their published password, write down its timeouts and its word list, and give administrators a way to end someone's sessions (`php artisan keyring:sign-out`) and a process for someone who has lost every sign-in method. One thing here goes against Level 3 on purpose: email codes are registered, to show what they are.
 
 ## Browser tests
 
@@ -108,7 +137,7 @@ npx playwright install chromium   # once
 npm run test:browser
 ```
 
-They build the assets and serve the app on `http://localhost:8137` with a throwaway SQLite database (`database/e2e.sqlite`) and their own `.env.e2e`. Before starting, they check that the booted app really uses that database, so your dev database and server are left alone.
+They build the assets and serve the app on `http://localhost:8137` with a throwaway SQLite database (`database/e2e.sqlite`) and their own `.env.e2e`. Mail is written to `storage/logs/laravel.log`, where the tests read the links and codes it carries. Before starting, they check that the booted app really uses that database, so your dev database and server are left alone.
 
 To run the same tests under Octane, with one long-lived FrankenPHP worker (the strictest check that nothing leaks from one person's request to the next):
 
@@ -132,5 +161,7 @@ SECURITY_KEY_MODELS=2fc0579f-8113-47ea-b116-bb5a8db9202a   # optional: allowOnly
 ```
 
 Chrome's virtual authenticator attests with a certificate it signs itself and makes afresh for every registration, always with the same key. So the tests read one from a registration of their own and have the app trust that as the maker's root. For a maker the app doesn't trust they use Yubico's real root (`tests/e2e/fixtures`). A real key's certificate chain, and the browser asking the person whether the site may see the key's make and model, are not covered by this.
+
+`KEYRING_REVEAL_TAKEN=true` is one more setting only the browser tests use. It turns on `keyring.registration.reveal_taken`, for the two pages nobody reaches without it: with it a new user is signed in before verifying their address, sees `auth/verify-email`, and verifies with the button on `auth/email-verification`.
 
 There's no CI yet: it would need to check out the private Keyring repository next to this one.

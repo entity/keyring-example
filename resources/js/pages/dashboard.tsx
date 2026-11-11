@@ -20,12 +20,17 @@ type KeyringAlert = {
     ip: string | null;
 };
 
+// The entry types in keyring.security_log.alerts, which Keyring shows once
+// after the next sign in.
 const alertText: Record<string, string> = {
     second_factor_failed:
         'Someone entered your password but failed the second step',
-    factor_failed: 'Someone tried to sign in with the wrong password or code',
-    locked_out: 'Sign-in was paused after too many attempts',
-    new_device: 'Your account was signed in to from a new device',
+    device_reported:
+        'A device was signed out from a “this wasn’t me” link in an email',
+    email_change_reverted: 'A change to your email address was undone',
+    clone_suspected: 'One of your security keys looked like a copy',
+    remember_me_reused:
+        'A “remember me” cookie was used twice, so that session was ended',
 };
 
 const tour = [
@@ -35,13 +40,18 @@ const tour = [
         href: editSecurity(),
     },
     {
-        title: 'Turn on two steps',
-        text: 'Add an authenticator app. You get recovery codes with it, and signing in now asks for a code after your password.',
+        title: 'Add a second factor',
+        text: 'Everyone needs one here, so a new account is sent to Security until it has a passkey, a security key or an authenticator app. The first one comes with recovery codes.',
         href: editSecurity(),
     },
     {
         title: 'Try step-up',
-        text: 'Security settings need a verification from the last 15 minutes. With a second method set up, the password alone isn’t enough.',
+        text: 'Security settings need a verification from the last 15 minutes, with the strongest proof your account has: if you have a security key, that’s what it asks for.',
+        href: editSecurity(),
+    },
+    {
+        title: 'See your sessions',
+        text: 'Settings → Security lists every session and device. End one, or sign out everywhere else, also while adding or removing a sign-in method.',
         href: editSecurity(),
     },
     {
@@ -52,8 +62,9 @@ const tour = [
 ];
 
 export default function Dashboard() {
-    const { keyringAlerts, statusMessage } = usePage<{
+    const { keyringAlerts, replaceRecoveryCodes, statusMessage } = usePage<{
         keyringAlerts: KeyringAlert[];
+        replaceRecoveryCodes: boolean;
         statusMessage: string | null;
     }>().props;
 
@@ -83,6 +94,25 @@ export default function Dashboard() {
                                     check your devices and change your password
                                 </Link>
                                 .
+                            </p>
+                        </AlertDescription>
+                    </Alert>
+                )}
+
+                {replaceRecoveryCodes && (
+                    <Alert>
+                        <TriangleAlert />
+                        <AlertTitle>Make new recovery codes</AlertTitle>
+                        <AlertDescription>
+                            <p>
+                                One of your recovery codes has been used.{' '}
+                                <Link
+                                    href={editSecurity()}
+                                    className="underline"
+                                >
+                                    Make a new set
+                                </Link>{' '}
+                                and save it, so you still have a way back in.
                             </p>
                         </AlertDescription>
                     </Alert>

@@ -3,10 +3,13 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use App\Notifications\Keyring\VerificationCode;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
 use Keyring\Enums\Assurance;
 use Keyring\Models\Authenticator;
+use Keyring\Sessions\SessionAssurance;
 use Keyring\Testing\VirtualAuthenticator;
 use PragmaRX\Google2FA\Google2FA;
 use Tests\TestCase;
@@ -20,6 +23,10 @@ class AuthenticationTest extends TestCase
         $this->get(route('login'))->assertOk();
     }
 
+    /**
+     * Someone with nothing else signs in with their password. The dashboard
+     * then sends them to add a second factor: see DashboardTest.
+     */
     public function test_users_can_authenticate_with_just_a_password()
     {
         $user = User::factory()->create();
@@ -80,6 +87,38 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    /**
+     * An emailed code is asked for after the password when it's all the
+     * account has, and leaves the session at AAL1: it's a step, not a
+     * second factor, so the user is still sent to add one.
+     */
+    public function test_an_emailed_code_is_a_sign_in_step_that_leaves_the_session_at_aal1()
+    {
+        Notification::fake();
+        $user = User::factory()->create();
+        Authenticator::factory()->emailCode()->for($user, 'authenticatable')->create();
+
+        $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password'])
+            ->assertRedirect(route('keyring.login.challenge', absolute: false));
+
+        $this->post(route('keyring.login.send', 'email-code'));
+
+        $code = null;
+        Notification::assertSentTo($user, VerificationCode::class, function (VerificationCode $notification) use (&$code) {
+            $code = $notification->code;
+
+            return true;
+        });
+
+        $this->post(route('keyring.login.verify', 'email-code'), ['code' => $code])
+            ->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertSame(Assurance::AAL1, app(SessionAssurance::class)->level());
+
+        $this->get(route('dashboard'))->assertRedirect(route('security.edit', absolute: false));
+    }
+
     public function test_users_can_sign_in_with_a_passkey_alone()
     {
         $user = User::factory()->create();
@@ -90,7 +129,7 @@ class AuthenticationTest extends TestCase
         $this->postJson(route('keyring.authenticators.confirm', 'passkey'), ['credential' => $key->register($options)])->assertOk();
         $this->post(route('logout'));
 
-        $options = $this->getJson(route('keyring.login.options', 'passkey'))->json();
+        $options = $this->getJson(route('keyring.login.options', 'passkey'))->json('options');
 
         $this->post(route('keyring.login.factor', 'passkey'), ['credential' => $key->assert($options)])
             ->assertRedirect(route('dashboard', absolute: false));

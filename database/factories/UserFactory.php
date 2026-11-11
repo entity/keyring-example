@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Keyring\Models\Authenticator;
 
 /**
  * @extends Factory<User>
@@ -34,7 +35,19 @@ class UserFactory extends Factory
     }
 
     /**
-     * Indicate that the model's email address should be unverified.
+     * Give the user an authenticator app, the second factor everyone needs
+     * before the app lets them past Settings → Security.
+     */
+    public function withSecondFactor(): static
+    {
+        return $this->afterCreating(function (User $user) {
+            Authenticator::factory()->totp()->default()->for($user, 'authenticatable')->create();
+        });
+    }
+
+    /**
+     * Indicate that the model's email address should be unverified. Such an
+     * account can't sign in until it has followed its verification link.
      */
     public function unverified(): static
     {

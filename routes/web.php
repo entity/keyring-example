@@ -36,6 +36,8 @@ if (app()->isLocal()) {
             'email' => 'n•••@example.com',
             'revertUrl' => url('/'),
             'confirmUrl' => url('/'),
+            'loginUrl' => route('login'),
+            'resetUrl' => route('password.request'),
         ]);
 
         abort_unless(method_exists($notification, 'toMail'), 404);

@@ -15,11 +15,22 @@ import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 
 type Props = {
-    status?: string;
+    /**
+     * Keyring's message for whatever sent the visitor here, already
+     * translated: "check your email" after registering, "sign in to finish
+     * verifying" after following the emailed link, "you've been signed out"
+     * and so on.
+     */
+    status?: string | null;
     canResetPassword: boolean;
+    canRegister: boolean;
 };
 
-export default function Login({ status, canResetPassword }: Props) {
+export default function Login({
+    status,
+    canResetPassword,
+    canRegister,
+}: Props) {
     const [remember, setRemember] = useState(false);
 
     // Passkeys show up in the email field's autofill, or behind the button.
@@ -31,6 +42,15 @@ export default function Login({ status, canResetPassword }: Props) {
     return (
         <>
             <Head title="Log in" />
+
+            {status && (
+                <div
+                    role="status"
+                    className="mb-4 text-center text-sm font-medium text-green-600"
+                >
+                    {status}
+                </div>
+            )}
 
             <Form
                 {...store.form()}
@@ -126,21 +146,17 @@ export default function Login({ status, canResetPassword }: Props) {
                             </div>
                         )}
 
-                        <div className="text-center text-sm text-muted-foreground">
-                            Don't have an account?{' '}
-                            <TextLink href={register()} tabIndex={5}>
-                                Sign up
-                            </TextLink>
-                        </div>
+                        {canRegister && (
+                            <div className="text-center text-sm text-muted-foreground">
+                                Don't have an account?{' '}
+                                <TextLink href={register()} tabIndex={5}>
+                                    Sign up
+                                </TextLink>
+                            </div>
+                        )}
                     </>
                 )}
             </Form>
-
-            {status && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {status}
-                </div>
-            )}
         </>
     );
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Actions\Keyring;
 
 use App\Models\User;
@@ -9,16 +11,16 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Keyring\Contracts\UpdatesUserPasswords;
-use Keyring\Rules\CurrentPassword;
 
 class UpdateUserPassword implements UpdatesUserPasswords
 {
     use PasswordValidationRules;
 
     /**
-     * Validate and update the signed-in user's password. Keyring then signs
-     * out their other sessions (unless they unticked that) and cancels
-     * pending email changes.
+     * Validate and update the signed-in user's password. Keyring has already
+     * checked their current password (the request's current_password) when
+     * they have one, and afterwards signs out their other sessions (unless
+     * they unticked that) and cancels pending email changes.
      *
      * @param  User  $user
      * @param  array<string, mixed>  $input
@@ -26,11 +28,6 @@ class UpdateUserPassword implements UpdatesUserPasswords
     public function update(Authenticatable&Model $user, array $input): void
     {
         $validated = Validator::make($input, [
-            // Covers a session left open on a shared computer. Users who sign
-            // in with passkeys only have no password to type.
-            'current_password' => filled($user->getAuthPassword())
-                ? ['required', 'string', new CurrentPassword($user)]
-                : ['nullable'],
             'password' => $this->passwordRules($user),
         ])->validate();
 

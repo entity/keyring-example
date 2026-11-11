@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # A throwaway app for the browser tests: its own SQLite database (also for
-# sessions and the cache), no queue, no real mail. Builds the assets, starts
+# sessions and the cache), no queue, and mail written to the log, where the
+# tests read the links it carries. Builds the assets, starts
 # the database from scratch, then serves the app with PHP's own server, or
 # with Octane when E2E_SERVER=octane. Playwright runs this.
 set -euo pipefail
@@ -20,8 +21,10 @@ DB_DATABASE=$database
 SESSION_DRIVER=database
 CACHE_STORE=database
 QUEUE_CONNECTION=sync
-MAIL_MAILER=array
-BCRYPT_ROUNDS=4
+MAIL_MAILER=log
+HASH_DRIVER=argon2id
+ARGON_MEMORY=1024
+ARGON_TIME=1
 LOG_CHANNEL=single
 ENV
 

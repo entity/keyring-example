@@ -21,9 +21,12 @@ import { run } from '@/keyring/actions';
  */
 export default function RecoveryCodesDialog({
     recovery,
+    signOutOthers = false,
     onClose,
 }: {
     recovery: Recovery;
+    /** Also end the account's other sessions when a new set is saved. */
+    signOutOthers?: boolean;
     onClose: () => void;
 }) {
     const [, copy] = useClipboard();
@@ -33,7 +36,10 @@ export default function RecoveryCodesDialog({
         if (recovery?.enrollment) {
             setSaving(true);
             const saved = await run(
-                () => confirmEnrollment('recovery', recovery.enrollment!),
+                () =>
+                    confirmEnrollment('recovery', recovery.enrollment!, {
+                        sign_out_others: signOutOthers,
+                    }),
                 { success: 'New recovery codes saved.', reload: false },
             );
             setSaving(false);
@@ -64,7 +70,7 @@ export default function RecoveryCodesDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                <ul className="grid grid-cols-2 gap-2 rounded-lg bg-muted p-4 font-mono text-sm">
+                <ul className="grid gap-2 rounded-lg bg-muted p-4 font-mono text-sm">
                     {recovery?.codes.map((code) => (
                         <li key={code}>{code}</li>
                     ))}

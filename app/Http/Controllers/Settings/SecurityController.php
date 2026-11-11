@@ -12,14 +12,20 @@ use Keyring\Facades\Keyring;
 use Keyring\Models\Authenticator;
 use Keyring\Models\SecurityEvent;
 use Keyring\Sessions\SessionAssurance;
+use Keyring\Sessions\Sessions;
 
 class SecurityController extends Controller
 {
     /**
-     * Sign-in methods, devices and recent activity. Changes go straight to
-     * Keyring's routes (/user/authenticators, /user/devices, /user/password).
+     * Sign-in methods, devices, sessions and recent activity. Changes go
+     * straight to Keyring's routes (/user/authenticators, /user/devices,
+     * /user/sessions, /user/password).
+     *
+     * This is also where Keyring sends people who have something to do
+     * first: set up a second factor (keyring.enrollment_url) or choose a new
+     * password (keyring.password_change_url). The page says which.
      */
-    public function edit(Request $request, DeviceManager $devices, SessionAssurance $assurance): Response
+    public function edit(Request $request, DeviceManager $devices, Sessions $sessions, SessionAssurance $assurance): Response
     {
         $user = $request->user();
 
@@ -38,14 +44,19 @@ class SecurityController extends Controller
                 ->map(fn ($factor) => $factor->key())
                 ->values(),
             'devices' => $devices->list($request, $user),
+            'sessions' => $sessions->list($request, $user),
             'activity' => Keyring::activity($user, 15)->map(fn (SecurityEvent $event) => [
                 'id' => $event->id,
                 'type' => $event->type,
+                'severity' => $event->severity->value,
                 'factor' => $event->factor,
                 'ip' => $event->ip,
                 'at' => $event->created_at->toIso8601String(),
             ]),
             'assurance' => $assurance->level()->name,
+            // Recovery codes and emailed codes don't count as one.
+            'hasSecondFactor' => $user->keyring->hasSecondFactor(),
+            'mustChangePassword' => Keyring::requiresPasswordChange($user),
         ]);
     }
 }
