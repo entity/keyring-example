@@ -9,8 +9,10 @@ use App\Actions\Keyring\ResetUserPassword;
 use App\Actions\Keyring\UpdateUserPassword;
 use App\Actions\Keyring\ValidateEmailChange;
 use App\Notifications\Keyring as Notifications;
+use App\Support\SupportContact;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\ServiceProvider;
 use Keyring\Facades\Keyring;
 use Keyring\Factors\EmailCode;
@@ -19,9 +21,8 @@ use Keyring\Factors\RecoveryCodes;
 use Keyring\Factors\Totp;
 use Keyring\Factors\WebAuthn;
 use Keyring\Login\Requirement;
-use Keyring\Risk\Action;
-use Keyring\Risk\Level;
-use Keyring\Risk\Risk;
+use Keyring\Notifications\CloneSuspected;
+use Keyring\Notifications\SecurityNotice;
 use Keyring\Risk\Signals\InactiveAccount;
 use Keyring\Risk\Signals\NewDevice;
 use Keyring\Risk\Signals\RepeatedFactorFailures;
@@ -63,53 +64,59 @@ class KeyringServiceProvider extends ServiceProvider
         Keyring::updateUserPasswordsUsing(UpdateUserPassword::class);
         Keyring::validateEmailChangesUsing(ValidateEmailChange::class);
 
-        // Every email Keyring sends is one of this app's notifications, in
-        // app/Notifications/Keyring, built from the Maizzle templates in
-        // resources/emails. A security notice left out here isn't sent.
+        // Keyring sends its own security notices. This app only gives them
+        // its look: every one is built from one Maizzle template,
+        // resources/emails/keyring/notice.vue.
+        SecurityNotice::toMailUsing(self::noticeMail(...));
+
+        // The five emails a flow needs each have a shape of their own, so
+        // they're this app's classes, in app/Notifications/Keyring, with a
+        // template each. The suspected clone is the one notice Keyring
+        // leaves off until it's asked for. The demo sends it.
         Keyring::notifications([
             'verification_code' => Notifications\VerificationCode::class,
             'confirm_email_change' => Notifications\ConfirmEmailChange::class,
             'email_change_notice' => Notifications\EmailChangeNotice::class,
             'email_address_in_use' => Notifications\EmailAddressInUse::class,
             'already_registered' => Notifications\AlreadyRegistered::class,
-            'password_changed' => Notifications\PasswordChanged::class,
-            'authenticator_added' => Notifications\AuthenticatorAdded::class,
-            'authenticator_removed' => Notifications\AuthenticatorRemoved::class,
-            'recovery_code_used' => Notifications\RecoveryCodeUsed::class,
-            'recovery_codes_generated' => Notifications\RecoveryCodesGenerated::class,
-            'email_changed' => Notifications\EmailChanged::class,
-            'account_locked' => Notifications\AccountLocked::class,
-            'new_device' => Notifications\NewDevice::class,
-            'second_factor_failed' => Notifications\SecondFactorFailed::class,
-            'suspicious_activity' => Notifications\SuspiciousActivity::class,
-            'email_change_reverted' => Notifications\EmailChangeReverted::class,
-            // An install leaves this one commented out. The demo sends it.
-            'clone_suspected' => Notifications\CloneSuspected::class,
+            'clone_suspected' => CloneSuspected::class,
         ]);
 
-        // What makes a sign in or a session look wrong, and what to do about
-        // it. A sign in after a long quiet period, or after several failed
-        // attempts, emails the owner as well as asking for a second factor.
-        Keyring::risk()
-            ->signals([
-                NewDevice::class,
-                RepeatedFactorFailures::class,
-                SessionFingerprintChanged::class,
-                InactiveAccount::class,
-                SuccessAfterFailures::class,
-            ])
-            ->respond(fn (Risk $risk) => match ($risk->level) {
-                Level::Low => Action::allow(),
-                Level::Medium => $risk->has('inactive_account') || $risk->has('success_after_failures')
-                    ? Action::stepUp()->notify()
-                    : Action::stepUp(),
-                Level::High => Action::stepUp()->notify(),
-                Level::Critical => Action::deny()->revokeAllSessions()->notify(),
-            });
+        // What makes a sign in or a session look wrong. Keyring's own
+        // response does the rest: a second factor at medium, an email to the
+        // owner from high, and a refused sign in at critical. A sign in
+        // after a long quiet period, or after several failed attempts,
+        // emails the owner whatever it scores.
+        Keyring::risk()->signals([
+            NewDevice::class,
+            RepeatedFactorFailures::class,
+            SessionFingerprintChanged::class,
+            InactiveAccount::class,
+            SuccessAfterFailures::class,
+        ]);
 
         // Keyring's pages already match the starter kit's names (auth/login,
         // auth/challenge...). Step-up confirmation reuses the challenge page.
         Keyring::page('confirm', 'auth/challenge');
+    }
+
+    /**
+     * The email of every security notice, from the one Maizzle template
+     * `npm run emails` builds into these two views. Blade escapes what the
+     * HTML one prints, so a name someone typed can't add markup to it.
+     */
+    protected static function noticeMail(SecurityNotice $notice, object $notifiable): MailMessage
+    {
+        $details = array_filter([__('When') => $notice->when, __('Device') => $notice->device, __('IP address') => $notice->ip]);
+
+        return (new MailMessage)->subject($notice->subject())->view(['html' => 'emails.keyring.notice', 'text' => 'emails.keyring.text.notice'], [
+            'subject' => $notice->subject(),
+            'intro' => $notice->intro(),
+            'details' => array_map(fn (string $label, string $value) => ['label' => $label, 'value' => $value], array_keys($details), $details),
+            'actionText' => $notice->action(),
+            'actionUrl' => $notice->action() === null ? null : $notice->url,
+            ...SupportContact::for($notice->contact),
+        ]);
     }
 
     /**

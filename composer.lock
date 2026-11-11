@@ -670,7 +670,7 @@
             "dist": {
                 "type": "path",
                 "url": "../keyring",
-                "reference": "44a9e8ca14564751f3f4bfcf5aeaa95eb1c6007f"
+                "reference": "dcc4dc4f50027bb596f462852d88b2b674fd1af4"
             },
             "require": {
                 "bacon/bacon-qr-code": "^3.0",

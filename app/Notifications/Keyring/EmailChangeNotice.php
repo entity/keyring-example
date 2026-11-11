@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Notifications\Keyring;
 
+use App\Support\SupportContact;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -15,8 +16,6 @@ use Illuminate\Notifications\Notification;
  */
 class EmailChangeNotice extends Notification
 {
-    use ShowsSupportContact;
-
     /**
      * @param  string  $email  the new address, with most of its name hidden
      * @param  string|null  $contact  "support_contact" from config/keyring.php: a URL or an address
@@ -42,7 +41,7 @@ class EmailChangeNotice extends Notification
             'email' => $this->email,
             'revertUrl' => $this->revertUrl,
             'confirmUrl' => $this->confirmUrl,
-            ...$this->supportContact(),
+            ...SupportContact::for($this->contact),
         ]);
     }
 }

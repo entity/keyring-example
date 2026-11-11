@@ -70,16 +70,20 @@ The templates are Vue files with Tailwind classes. Maizzle inlines the CSS and w
 <Heading class="text-2xl font-semibold"><Raw>{{ $subject }}</Raw></Heading>
 ```
 
-A notification then returns those views from `toMail()`:
+Keyring sends the security notices itself, so the app only gives them their look. One callback in `KeyringServiceProvider` builds every notice from the one template:
 
 ```php
-return (new MailMessage)->subject($this->subject())->view(
-    ['html' => 'emails.keyring.notice', 'text' => 'emails.keyring.text.notice'],
-    ['subject' => $this->subject(), 'intro' => $this->intro(), /* ... */],
-);
+SecurityNotice::toMailUsing(fn (SecurityNotice $notice, object $notifiable) => (new MailMessage)
+    ->subject($notice->subject())
+    ->view(
+        ['html' => 'emails.keyring.notice', 'text' => 'emails.keyring.text.notice'],
+        ['subject' => $notice->subject(), 'intro' => $notice->intro(), /* ... */],
+    ));
 ```
 
-Blade escapes what the HTML views print, so a name someone typed for their security key can't add a link to a genuine security email. The twelve security notices share one template through `SecurityNotice::toMail()`; each notice class only says its subject and intro.
+The five emails a flow needs (the emailed code, the two for an email change, and the two that answer an address that's already taken) each have their own template, so they're the app's own classes in `app/Notifications/Keyring`, registered with `Keyring::notifications()`.
+
+Blade escapes what the HTML views print, so a name someone typed for their security key can't add a link to a genuine security email.
 
 ## Demo accounts
 

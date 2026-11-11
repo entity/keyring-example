@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Notifications\Keyring;
 
+use App\Support\SupportContact;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -13,8 +14,6 @@ use Illuminate\Notifications\Notification;
  */
 class VerificationCode extends Notification
 {
-    use ShowsSupportContact;
-
     public function __construct(
         #[\SensitiveParameter] public string $code,
         public int $minutes,
@@ -36,7 +35,7 @@ class VerificationCode extends Notification
             'code' => trim(chunk_split($this->code, 4, ' ')),
             'minutes' => $this->minutes,
             'enrolling' => $this->enrolling,
-            ...$this->supportContact(),
+            ...SupportContact::for($this->contact),
         ]);
     }
 }
