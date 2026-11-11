@@ -15,6 +15,14 @@ const factorLabels: Record<string, string> = {
     recovery: 'Recovery code',
 };
 
+// What a step-up asks for depends on the account: the strongest proof it has.
+const confirmCopy: Record<string, string> = {
+    'security-key':
+        'This changes how you sign in, so we need your security key: the strongest proof your account has.',
+    passkey:
+        'This changes how you sign in, so we need your passkey: the strongest proof your account has.',
+};
+
 /**
  * Keyring renders this page for the second step of signing in
  * (purpose "login") and for step-up confirmation (purpose "confirm").
@@ -37,8 +45,8 @@ export default function Challenge(props: ChallengeProps) {
             <div className="grid gap-6">
                 {props.purpose === 'confirm' && (
                     <p className="text-center text-sm text-muted-foreground">
-                        This changes how you sign in, so we need to check it’s
-                        really you.
+                        {confirmCopy[props.factor] ??
+                            'This changes how you sign in, so we need to check it’s really you.'}
                     </p>
                 )}
 

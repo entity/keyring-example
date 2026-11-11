@@ -9,11 +9,13 @@ import { Spinner } from '@/components/ui/spinner';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
 
-type Props = {
-    passwordRules?: string;
-};
-
-export default function Register({ passwordRules }: Props) {
+/**
+ * Registering doesn't sign anyone in, and answers the same whether or not
+ * the address already has an account: Keyring sends the visitor to the login
+ * page with "check your email", and they sign in once they've followed the
+ * link it sent.
+ */
+export default function Register() {
     return (
         <>
             <Head title="Register" />
@@ -67,8 +69,12 @@ export default function Register({ passwordRules }: Props) {
                                     autoComplete="new-password"
                                     name="password"
                                     placeholder="Password"
-                                    passwordrules={passwordRules}
+                                    passwordrules="minlength: 15;"
                                 />
+                                <p className="text-xs text-muted-foreground">
+                                    At least 15 characters. A few words you'll
+                                    remember work well.
+                                </p>
                                 <InputError message={errors.password} />
                             </div>
 
@@ -83,7 +89,7 @@ export default function Register({ passwordRules }: Props) {
                                     autoComplete="new-password"
                                     name="password_confirmation"
                                     placeholder="Confirm password"
-                                    passwordrules={passwordRules}
+                                    passwordrules="minlength: 15;"
                                 />
                                 <InputError
                                     message={errors.password_confirmation}
@@ -99,6 +105,11 @@ export default function Register({ passwordRules }: Props) {
                                 {processing && <Spinner />}
                                 Create account
                             </Button>
+
+                            <p className="text-center text-xs text-muted-foreground">
+                                We'll email you a link to verify your address.
+                                You can sign in once you've followed it.
+                            </p>
                         </div>
 
                         <div className="text-center text-sm text-muted-foreground">

@@ -4,20 +4,34 @@ import { Spinner } from '@/components/ui/spinner';
 
 type Props = {
     device: string;
+    /** Where the button posts: the link's address without its signature. */
     url: string;
+    expires: string;
+    signature: string;
 };
 
 /**
  * The "this wasn't me" link from a new sign-in email opens this page.
  * Nothing happens until the button is pressed, so mail scanners that open
- * links can't sign anyone out.
+ * links can't sign anyone out. The button posts the link's signature in the
+ * body, which is the only place Keyring reads it from.
  */
-export default function DeviceReport({ device, url }: Props) {
+export default function DeviceReport({
+    device,
+    url,
+    expires,
+    signature,
+}: Props) {
     return (
         <>
             <Head title="Secure your account" />
 
-            <Form action={url} method="post" className="grid gap-6 text-center">
+            <Form
+                action={url}
+                method="post"
+                transform={(data) => ({ ...data, expires, signature })}
+                className="grid gap-6 text-center"
+            >
                 {({ processing }) => (
                     <>
                         <p className="text-sm text-muted-foreground">

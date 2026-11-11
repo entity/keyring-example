@@ -70,7 +70,7 @@ const codeCopy: Record<
     }),
     recovery: (challenge) => ({
         label: 'Recovery code',
-        hint: `${challenge.props.authenticator.remaining ?? 0} left`,
+        hint: `One of the codes you saved, dashes or not. ${challenge.props.authenticator.remaining ?? 0} left.`,
         numeric: false,
     }),
 };
@@ -87,7 +87,8 @@ function Code({ challenge }: { challenge: Challenge }) {
         return (
             <div className="grid gap-4 text-center">
                 <p className="text-sm text-muted-foreground">
-                    We'll email a code to {props.authenticator.hint}.
+                    We'll email a code to {props.authenticator.hint}. It's an
+                    extra step after your password, not a second factor.
                 </p>
                 <Button className="w-full" onClick={() => challenge.send()}>
                     Send code
