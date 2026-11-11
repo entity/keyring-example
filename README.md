@@ -123,4 +123,14 @@ Or with several workers, each replaced after a few requests:
 E2E_OCTANE_WORKERS=8 E2E_OCTANE_MAX_REQUESTS=20 npm run test:browser:octane
 ```
 
+`tests/e2e/attestation.spec.ts` covers security keys that have to prove who made them. The demo takes any security key, and these settings (only the browser tests set them, by adding them to `.env.e2e` and reloading Octane's workers) turn that on:
+
+```ini
+SECURITY_KEY_ATTESTATION=true                       # requireAttestation() on the security key factor
+KEYRING_ATTESTATION_ROOTS=/path/to/maker-root.pem   # the makers to trust, separated by commas
+SECURITY_KEY_MODELS=2fc0579f-8113-47ea-b116-bb5a8db9202a   # optional: allowOnly() these AAGUIDs
+```
+
+Chrome's virtual authenticator attests with a certificate it signs itself and makes afresh for every registration, always with the same key. So the tests read one from a registration of their own and have the app trust that as the maker's root. For a maker the app doesn't trust they use Yubico's real root (`tests/e2e/fixtures`). A real key's certificate chain, and the browser asking the person whether the site may see the key's make and model, are not covered by this.
+
 There's no CI yet: it would need to check out the private Keyring repository next to this one.
