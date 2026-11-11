@@ -35,8 +35,6 @@ class SecurityController extends Controller
                 ->map(fn (Authenticator $authenticator) => [
                     ...$authenticator->factor()->present($authenticator),
                     'isDefault' => $authenticator->is_default,
-                    'createdAt' => $authenticator->created_at?->toIso8601String(),
-                    'lastUsedAt' => $authenticator->last_used_at?->toIso8601String(),
                 ])
                 ->values(),
             'enrollable' => Keyring::registered()

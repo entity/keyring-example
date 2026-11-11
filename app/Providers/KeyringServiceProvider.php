@@ -45,7 +45,7 @@ class KeyringServiceProvider extends ServiceProvider
             // whoever reads the inbox can reset the password too. A password
             // and a code is still AAL1, and doesn't count as having a second
             // factor. Keyring makes apps opt in, and the demo shows it.
-            EmailCode::asSecondFactor(),
+            EmailCode::asExtraStep(),
             RecoveryCodes::class,
         ]);
 
@@ -79,12 +79,12 @@ class KeyringServiceProvider extends ServiceProvider
             'recovery_codes_generated' => Notifications\RecoveryCodesGenerated::class,
             'email_changed' => Notifications\EmailChanged::class,
             'account_locked' => Notifications\AccountLocked::class,
-            // An install leaves these five commented out. The demo sends them.
             'new_device' => Notifications\NewDevice::class,
             'second_factor_failed' => Notifications\SecondFactorFailed::class,
             'suspicious_activity' => Notifications\SuspiciousActivity::class,
-            'clone_suspected' => Notifications\CloneSuspected::class,
             'email_change_reverted' => Notifications\EmailChangeReverted::class,
+            // An install leaves this one commented out. The demo sends it.
+            'clone_suspected' => Notifications\CloneSuspected::class,
         ]);
 
         // What makes a sign in or a session look wrong, and what to do about

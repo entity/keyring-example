@@ -1,3 +1,4 @@
+import type { Authenticator } from '@entity/keyring/react';
 import {
     beginEnrollment,
     confirmEnrollment,
@@ -43,17 +44,13 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { run } from '@/keyring/actions';
 
-export type AuthenticatorRow = {
-    factor: string;
+/**
+ * A sign-in method as Keyring's factors present it (name, hint, when it was
+ * added and last used), plus whether it's the one asked for first.
+ */
+export type AuthenticatorRow = Authenticator & {
     id: string;
-    name: string;
-    hint?: string;
-    remaining?: number;
-    /** Recovery codes: one has been used, so a new set should be made. */
-    replace?: boolean;
     isDefault: boolean;
-    createdAt: string | null;
-    lastUsedAt: string | null;
 };
 
 const factorInfo: Record<
