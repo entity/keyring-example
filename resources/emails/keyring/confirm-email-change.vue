@@ -22,7 +22,9 @@
         <Spacer class="h-8" />
         <Action href="{{ $url }}" fallback>Confirm email address</Action>
 
-        <Note>This link expires <Raw>{{ $expires }}</Raw>.</Note>
+        <Note
+            >This link expires <Raw>{{ $expires }}.</Raw></Note
+        >
 
         <Callout title="Didn't ask for this?">
             <Text class="m-0 text-sm/6">

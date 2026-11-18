@@ -50,7 +50,5 @@ withDefaults(
             </Text>
         </template>
     </NotPlaintext>
-    <Plaintext>
-        <slot />:<br />{{ href }}
-    </Plaintext>
+    <Plaintext> <slot />:<br />{{ href }} </Plaintext>
 </template>

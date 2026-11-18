@@ -6,8 +6,8 @@
     <Shell preheader="Confirm your email address to finish setting up.">
         <template #top><Accent tone="info" /></template>
         <template #footer>
-            You're getting this email because this address was used to create
-            an account.
+            You're getting this email because this address was used to create an
+            account.
         </template>
 
         <NotPlaintext>
@@ -25,7 +25,9 @@
         <Spacer class="h-8" />
         <Action href="{{ $url }}" fallback>Verify email address</Action>
 
-        <Note>This link expires in <Raw>{{ $minutes }}</Raw> minutes.</Note>
+        <Note
+            >This link expires in <Raw>{{ $minutes }}</Raw> minutes.</Note
+        >
 
         <Callout title="Didn't create an account?">
             <Text class="m-0 text-sm/6">

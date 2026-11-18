@@ -18,32 +18,34 @@ defineProps<{ preheader?: string }>();
 
         <Container class="max-w-xl p-0 py-10 sm:px-4 sm:py-6">
             <NotPlaintext>
-            <Section class="px-8 pb-6 sm:px-4">
-                <table role="none" cellpadding="0" cellspacing="0">
-                    <tr>
-                        <td class="pr-3 align-middle">
-                            <a href="{{ config('app.url') }}">
-                                <img
-                                    src="{{ $images }}/logo.png"
-                                    width="36"
-                                    height="36"
-                                    alt=""
-                                    class="block rounded-[9px]"
-                                />
-                            </a>
-                        </td>
-                        <td class="align-middle">
-                            <Text
-                                class="m-0 text-base/6 font-semibold tracking-tight text-zinc-950 dark:text-zinc-50"
-                            >
-                                <Raw>{{ config('app.name') }}</Raw>
-                            </Text>
-                        </td>
-                    </tr>
-                </table>
-            </Section>
+                <Section class="px-8 pb-6 sm:px-4">
+                    <table role="none" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td class="pr-3 align-middle">
+                                <a href="{{ config('app.url') }}">
+                                    <img
+                                        src="{{ $images }}/logo.png"
+                                        width="36"
+                                        height="36"
+                                        alt=""
+                                        class="block rounded-[9px]"
+                                    />
+                                </a>
+                            </td>
+                            <td class="align-middle">
+                                <Text
+                                    class="m-0 text-base/6 font-semibold tracking-tight text-zinc-950 dark:text-zinc-50"
+                                >
+                                    <Raw>{{ config('app.name') }}</Raw>
+                                </Text>
+                            </td>
+                        </tr>
+                    </table>
+                </Section>
             </NotPlaintext>
-            <Plaintext><Raw>{{ config('app.name') }}</Raw></Plaintext>
+            <Plaintext
+                ><Raw>{{ config('app.name') }}</Raw></Plaintext
+            >
 
             <Section
                 class="rounded-2xl border border-solid border-zinc-200 bg-white p-0 dark:border-zinc-800 dark:bg-zinc-900"
@@ -77,7 +79,9 @@ defineProps<{ preheader?: string }>();
                         security of your account.
                     </slot>
                 </Text>
-                <Text class="m-0 mt-3 text-xs/5 text-zinc-500 dark:text-zinc-400">
+                <Text
+                    class="m-0 mt-3 text-xs/5 text-zinc-500 dark:text-zinc-400"
+                >
                     <Link
                         href="{{ config('app.url') }}"
                         class="text-zinc-500 no-underline dark:text-zinc-400"

@@ -25,12 +25,14 @@
         <Spacer class="h-8" />
         <Action href="{{ $url }}" fallback>Reset password</Action>
 
-        <Note>This link expires in <Raw>{{ $minutes }}</Raw> minutes.</Note>
+        <Note
+            >This link expires in <Raw>{{ $minutes }}</Raw> minutes.</Note
+        >
 
         <Callout title="Didn't ask for this?">
             <Text class="m-0 text-sm/6">
-                You can ignore this email. Your password won't change unless
-                the link is used.
+                You can ignore this email. Your password won't change unless the
+                link is used.
             </Text>
         </Callout>
     </Shell>

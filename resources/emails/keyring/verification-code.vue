@@ -5,10 +5,10 @@
 <template>
     <Shell>
         <template #preheader>
-            <Preheader>
+            <Preview>
                 Enter it to finish. It expires in <Raw>{{ $minutes }}</Raw>
                 minutes.
-            </Preheader>
+            </Preview>
         </template>
         <template #top><Accent tone="info" /></template>
 
@@ -21,8 +21,8 @@
 
         <Raw>@if ($enrolling)</Raw>
         <Lead>
-            Enter this code to finish adding your email address as a way to
-            sign in. It expires in <Raw>{{ $minutes }}</Raw> minutes.
+            Enter this code to finish adding your email address as a way to sign
+            in. It expires in <Raw>{{ $minutes }}</Raw> minutes.
         </Lead>
         <Raw>@else</Raw>
         <Lead>
@@ -39,9 +39,14 @@
                 <Raw>{{ $code }}</Raw>
             </Text>
         </NotPlaintext>
-        <Plaintext>Your code: <Raw>{{ $code }}</Raw></Plaintext>
+        <Plaintext
+            >Your code: <Raw>{{ $code }}</Raw></Plaintext
+        >
 
-        <Note>Don't share this code with anyone. We'll never ask you for it.</Note>
+        <Note
+            >Don't share this code with anyone. We'll never ask you for
+            it.</Note
+        >
 
         <Raw>@if ($enrolling)</Raw>
         <Callout title="Didn't ask for this?">

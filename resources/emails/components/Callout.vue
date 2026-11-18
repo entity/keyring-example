@@ -7,12 +7,7 @@ withDefaults(defineProps<{ tone?: Tone; title?: string }>(), { tone: 'info' });
 
 <template>
     <Spacer class="h-6" />
-    <div
-        :class="[
-            'rounded-xl border border-solid px-5 py-4',
-            tones[tone].box,
-        ]"
-    >
+    <div :class="['rounded-xl border border-solid px-5 py-4', tones[tone].box]">
         <Text
             v-if="title || $slots.title"
             :class="['m-0 text-sm/6 font-semibold', tones[tone].title]"

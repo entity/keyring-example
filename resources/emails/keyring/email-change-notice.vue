@@ -22,7 +22,9 @@
 
         <Lead>
             Someone asked to change the email address on your account to
-            <Text as="span" class="font-semibold text-zinc-950 dark:text-zinc-50"
+            <Text
+                as="span"
+                class="font-semibold text-zinc-950 dark:text-zinc-50"
                 ><Raw>{{ $email }}</Raw></Text
             >.
         </Lead>

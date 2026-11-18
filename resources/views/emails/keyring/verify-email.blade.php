@@ -94,6 +94,6 @@
             </p></div></div></div> <!--[if mso]></td></tr></table><![endif]--></div> <!--[if mso]></td></tr></table><![endif]--> <!--[if mso]><table role="none" cellpadding="0" cellspacing="0" style="width: 100%"><tr><td style="padding-left: 32px; padding-right: 32px; padding-top: 32px"><![endif]--> <div class="sm-px-4" style="padding-left: 32px; padding-right: 32px; padding-top: 32px;">@isset($contact) <p class="dark-text-zinc-300" style="margin: 0 0 12px; font-size: 13px; line-height: 20px; color: #52525b;">
                     If this wasn't you and you need help, contact us:
                     @isset($contactUrl) <a href="{{ $contactUrl }}" class="dark-text-zinc-50" style="font-weight: 600; color: #09090b; text-decoration: underline;">{{ $contact }}</a> @else {{ $contact }} @endisset</p> @endisset <p class="dark-text-zinc-400" style="margin: 0; font-size: 12px; line-height: 20px; color: #71717a;">
-            You're getting this email because this address was used to create
-            an account.
+            You're getting this email because this address was used to create an
+            account.
         </p> <p class="dark-text-zinc-400" style="margin: 12px 0 0; font-size: 12px; line-height: 20px; color: #71717a;"><a href="{{ config('app.url') }}" class="dark-text-zinc-400" style="color: #71717a; text-decoration: none;">{{ config('app.name') }}</a></p></div> <!--[if mso]></td></tr></table><![endif]--></div> <!--[if mso]></td></tr></table><![endif]--></div></body></html>

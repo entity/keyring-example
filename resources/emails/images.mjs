@@ -39,9 +39,18 @@ const icons = {
 // Lucide's icons as [tag, attributes] pairs, read from lucide-react, which
 // doesn't export them by name.
 async function svg(name, colour, size) {
-    const { __iconNode } = await import(pathToFileURL(resolve(`node_modules/lucide-react/dist/esm/icons/${name}.js`)).href);
+    const { __iconNode } = await import(
+        pathToFileURL(
+            resolve(`node_modules/lucide-react/dist/esm/icons/${name}.js`),
+        ).href
+    );
     const children = __iconNode
-        .map(([tag, { key, ...attributes }]) => `<${tag} ${Object.entries(attributes).map(([k, v]) => `${k}="${v}"`).join(' ')} />`)
+        .map(
+            ([tag, { key: _key, ...attributes }]) =>
+                `<${tag} ${Object.entries(attributes)
+                    .map(([k, v]) => `${k}="${v}"`)
+                    .join(' ')} />`,
+        )
         .join('');
 
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${colour}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: ${colour}">${children}</svg>`;
@@ -54,7 +63,10 @@ const page = await browser.newPage({ deviceScaleFactor: 3 });
 
 async function draw(html, file) {
     await page.setContent(`<body style="margin: 0">${html}</body>`);
-    await page.locator('body > *').first().screenshot({ path: `${out}/${file}`, omitBackground: true });
+    await page
+        .locator('body > *')
+        .first()
+        .screenshot({ path: `${out}/${file}`, omitBackground: true });
 }
 
 // The logo: a white key on an indigo square, shown at 36px.

@@ -40,7 +40,8 @@
     </NotPlaintext>
     <Plaintext>
         <Raw>@foreach ($details as $detail)</Raw>
-        <Raw>{{ $detail['label'] }}</Raw>: <Raw>{{ $detail['value'] }}</Raw>
+        <Raw>{{ $detail['label'] }}</Raw
+        >: <Raw>{{ $detail['value'] }}</Raw>
         <Raw>@endforeach</Raw>
     </Plaintext>
     <Raw>@endif</Raw>

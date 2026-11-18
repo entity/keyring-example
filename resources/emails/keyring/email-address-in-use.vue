@@ -3,7 +3,9 @@
   another account to it, instead of telling them it's taken.
 -->
 <template>
-    <Shell preheader="Someone tried to use your email address. Nothing changed.">
+    <Shell
+        preheader="Someone tried to use your email address. Nothing changed."
+    >
         <template #top><Accent tone="info" /></template>
         <template #footer>
             You're getting this email because someone tried to use this address

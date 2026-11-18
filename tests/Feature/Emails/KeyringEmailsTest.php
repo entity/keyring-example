@@ -249,6 +249,16 @@ class KeyringEmailsTest extends TestCase
         $this->assertStringContainsString(route('password.reset', ['token' => 'a-token', 'email' => 'nora@example.com']), $rendered['text']);
     }
 
+    public function test_the_inbox_preview_line_says_what_happened()
+    {
+        $notice = $this->render((new PasswordChanged(when: 'now'))->toMail(new User))['html'];
+        $code = $this->render((new VerificationCode('12345678', 10))->toMail(new User))['html'];
+
+        $this->assertStringContainsString('mso-hide:all;">The password for your account was just changed.', $notice);
+        $this->assertStringContainsString('It expires in 10', $code);
+        $this->assertMatchesRegularExpression('/This link expires \S.* from now\./', $this->render((new ConfirmEmailChange('https://example.com/confirm', now()->addDay()))->toMail(new User))['text']);
+    }
+
     public function test_the_email_gallery_is_only_there_while_developing()
     {
         $this->get('/emails')->assertNotFound();
