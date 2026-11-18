@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DemoLocationController;
+use App\Http\Controllers\DemoStateController;
 use App\Http\Controllers\WelcomeController;
 use App\Support\EmailGallery;
 use Illuminate\Support\Facades\Route;
@@ -19,6 +20,13 @@ Route::post('demo-location', DemoLocationController::class)->name('demo-location
 // sample content: /emails is a gallery of them, /emails/new_device shows one
 // and /emails/new_device/text its plain text part.
 if (app()->isLocal()) {
+    // Signed, expiring links straight into one state of the app, like halfway
+    // through a sign in: `php artisan example:links` prints them.
+    Route::get('try/{state}', DemoStateController::class)
+        ->middleware('signed:relative')
+        ->whereIn('state', array_keys(DemoStateController::STATES))
+        ->name('demo.state');
+
     $gallery = new EmailGallery;
 
     Route::get('emails', fn () => view('emails.gallery', ['groups' => $gallery->groups()]))

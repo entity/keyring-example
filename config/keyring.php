@@ -85,8 +85,9 @@ return [
 
     'enrollment_url' => '/settings/security',
 
-    // The pages anyone can open stay open to them meanwhile.
-    'enrollment_except' => ['home', 'well-known.passkeys'],
+    // The pages anyone can open stay open to them meanwhile, and so do the
+    // local-only links into each state of the app (example:links).
+    'enrollment_except' => ['home', 'well-known.passkeys', 'demo.state'],
 
     /*
     |--------------------------------------------------------------------------

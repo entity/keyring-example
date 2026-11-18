@@ -150,6 +150,15 @@ Add that secret to any authenticator app to get codes for the second account. A 
 php artisan example:reset
 ```
 
+To jump straight into one state of the app, like halfway through a sign in waiting on a code, or signed in on Settings → Security, print a signed link to each one (local only, they work for a day):
+
+```bash
+php artisan example:links
+php artisan example:links --base=https://your-machine.example:9420   # reached some other way
+```
+
+Each link signs the browser out first, then signs in or starts the sign in as one of the demo accounts. Behind a proxy like `tailscale serve`, set `TRUSTED_PROXIES=127.0.0.1` so the app believes it's on HTTPS.
+
 ## What changed from the starter kit
 
 - `laravel/fortify` and `laravel/chisel` removed. `entity/keyring` added, with its migrations published.
