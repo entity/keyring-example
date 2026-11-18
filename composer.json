@@ -10,12 +10,14 @@
     "license": "MIT",
     "require": {
         "php": "^8.5",
+        "bacon/bacon-qr-code": "^3.0",
         "entity/keyring": "@dev",
         "inertiajs/inertia-laravel": "^3.0",
         "laravel/framework": "^13.17",
         "laravel/octane": "^2.23",
         "laravel/tinker": "^3.0",
-        "laravel/wayfinder": "^0.1.14"
+        "laravel/wayfinder": "^0.1.14",
+        "pragmarx/google2fa": "^9.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.24",
