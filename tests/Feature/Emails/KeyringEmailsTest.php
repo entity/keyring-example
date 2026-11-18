@@ -9,6 +9,7 @@ use App\Notifications\Keyring\EmailChangeNotice;
 use App\Notifications\Keyring\VerificationCode;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\File;
 use Keyring\Facades\Keyring;
@@ -23,10 +24,13 @@ use Keyring\Notifications\SecondFactorFailed;
 use Keyring\Notifications\SecurityNotice;
 use Keyring\Notifications\SuspiciousActivity;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\Mime\Email;
 use Tests\TestCase;
 
 class KeyringEmailsTest extends TestCase
 {
+    use RefreshDatabase;
+
     /**
      * @return array{html: string, text: string}
      */
@@ -71,7 +75,7 @@ class KeyringEmailsTest extends TestCase
     {
         $this->assertStringContainsString('<!DOCTYPE html>', $mail['html']);
         $this->assertStringContainsString(config('app.name'), $mail['html']);
-        $this->assertStringContainsString(asset('images/emails/logo.png'), $mail['html']);
+        $this->assertStringContainsString(config('app.url').'/images/emails/logo.png', $mail['html']);
         $this->assertStringNotContainsString('{{', $mail['html'].$mail['text']);
         $this->assertStringNotContainsString('@if', $mail['html'].$mail['text']);
 
@@ -257,6 +261,37 @@ class KeyringEmailsTest extends TestCase
         $this->assertStringContainsString('mso-hide:all;">The password for your account was just changed.', $notice);
         $this->assertStringContainsString('It expires in 10', $code);
         $this->assertMatchesRegularExpression('/This link expires \S.* from now\./', $this->render((new ConfirmEmailChange('https://example.com/confirm', now()->addDay()))->toMail(new User))['text']);
+    }
+
+    /**
+     * The request that sends a reset email says what host it's for, and
+     * whoever sends it chooses that. The logo, icons and links come from
+     * APP_URL all the same.
+     */
+    public function test_a_forged_host_doesnt_reach_the_emails()
+    {
+        $user = User::factory()->create();
+
+        $this->post('http://evil.example/forgot-password', ['email' => $user->email]);
+
+        $sent = app('mailer')->getSymfonyTransport()->messages();
+        $this->assertCount(1, $sent);
+        $email = $sent[0]->getOriginalMessage();
+        $this->assertInstanceOf(Email::class, $email);
+        $body = $email->getHtmlBody().$email->getTextBody();
+
+        $this->assertStringContainsString(config('app.url').'/images/emails/logo.png', $body);
+        $this->assertStringNotContainsString('evil.example', $body);
+    }
+
+    public function test_a_security_notice_rendered_under_a_forged_host_keeps_to_app_url()
+    {
+        $this->get('http://evil.example/login');
+
+        $mail = $this->render((new NewDevice(when: 'now'))->toMail(new User));
+
+        $this->assertStringContainsString(config('app.url').'/images/emails/monitor-smartphone-warning.png', $mail['html']);
+        $this->assertStringNotContainsString('evil.example', $mail['html'].$mail['text']);
     }
 
     public function test_the_email_gallery_is_only_there_while_developing()

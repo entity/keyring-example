@@ -3,6 +3,10 @@
  * The frame every email shares: the logo, a card for the message, and a
  * footer saying why it was sent and who to ask for help. The #top slot sits
  * on the card's top edge, for the tone's accent bar.
+ *
+ * Its links and images start at Keyring's link root (APP_URL), never at the
+ * request: asset() follows the Host header, so a forged one on "forgot
+ * password" would put someone else's site in a real email.
  */
 defineProps<{ preheader?: string }>();
 </script>
@@ -12,7 +16,8 @@ defineProps<{ preheader?: string }>();
         class="bg-zinc-100 dark:bg-zinc-950"
         body-class="bg-zinc-100 dark:bg-zinc-950"
     >
-        <Raw>@php($images = asset('images/emails'))</Raw>
+        <Raw>@php($root = \Keyring\Facades\Keyring::linkRoot())</Raw>
+        <Raw>@php($images = $root.'/images/emails')</Raw>
         <Preheader v-if="preheader">{{ preheader }}</Preheader>
         <slot name="preheader" />
 
@@ -22,7 +27,7 @@ defineProps<{ preheader?: string }>();
                     <table role="none" cellpadding="0" cellspacing="0">
                         <tr>
                             <td class="pr-3 align-middle">
-                                <a href="{{ config('app.url') }}">
+                                <a href="{{ $root }}">
                                     <img
                                         src="{{ $images }}/logo.png"
                                         width="36"
@@ -83,7 +88,7 @@ defineProps<{ preheader?: string }>();
                     class="m-0 mt-3 text-xs/5 text-zinc-500 dark:text-zinc-400"
                 >
                     <Link
-                        href="{{ config('app.url') }}"
+                        href="{{ $root }}"
                         class="text-zinc-500 no-underline dark:text-zinc-400"
                         ><Raw>{{ config('app.name') }}</Raw></Link
                     >

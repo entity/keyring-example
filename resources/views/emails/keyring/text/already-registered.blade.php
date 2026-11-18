@@ -1,5 +1,7 @@
 @php(ob_start())
-@php($images = asset('images/emails'))
+@php($root = \Keyring\Facades\Keyring::linkRoot())
+
+@php($images = $root.'/images/emails')
 
 {!! config('app.name') !!}
 
@@ -31,5 +33,5 @@ You're getting this email because someone tried to register with this address.
 
 {!! config('app.name') !!}
 
-{!! config('app.url') !!}
+{!! $root !!}
 {!! trim(preg_replace('/\n\s*\n/', "\n\n", ob_get_clean())) !!}
