@@ -23,8 +23,12 @@ use Keyring\Factors\WebAuthn;
 use Keyring\Login\Requirement;
 use Keyring\Notifications\CloneSuspected;
 use Keyring\Notifications\SecurityNotice;
+use Keyring\Risk\Signals\BreachedPassword;
+use Keyring\Risk\Signals\ImpossibleTravel;
 use Keyring\Risk\Signals\InactiveAccount;
+use Keyring\Risk\Signals\NewCountry;
 use Keyring\Risk\Signals\NewDevice;
+use Keyring\Risk\Signals\RecentlyChangedRecovery;
 use Keyring\Risk\Signals\RepeatedFactorFailures;
 use Keyring\Risk\Signals\SessionFingerprintChanged;
 use Keyring\Risk\Signals\SuccessAfterFailures;
@@ -93,6 +97,20 @@ class KeyringServiceProvider extends ServiceProvider
             SessionFingerprintChanged::class,
             InactiveAccount::class,
             SuccessAfterFailures::class,
+            // Email changes are on, and an address that changed this week
+            // shouldn't be trusted on its own.
+            RecentlyChangedRecovery::class,
+            // These two stay quiet until there's a locator (KEYRING_LOCATOR,
+            // see config/keyring.php), so they're always on. A new country
+            // and impossible travel together add up to 90, which refuses
+            // the sign in: on the demo locator, sign in from London and then
+            // from Tokyo to see it.
+            NewCountry::class,
+            ImpossibleTravel::class,
+            // Every password sign in asks Have I Been Pwned, so it's only on
+            // with BREACHED_PASSWORD_CHECK. A password it finds holds the
+            // user on the security page until they choose another.
+            ...config('keyring.passwords.uncompromised') ? [BreachedPassword::class] : [],
         ]);
 
         // Keyring's pages already match the starter kit's names (auth/login,

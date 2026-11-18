@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\DemoLocator;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Keyring\Facades\Keyring;
@@ -49,6 +50,15 @@ class HandleInertiaRequests extends Middleware
             'keyringAlerts' => fn () => $request->session()->get('keyring.alerts', []),
             // A recovery code has been used, so it's time to make a new set.
             'replaceRecoveryCodes' => fn () => (bool) $request->user()?->keyring->shouldReplaceRecoveryCodes(),
+            // The login page's "Pretend to be in" picker, only with the demo
+            // locator (KEYRING_LOCATOR=demo).
+            'demoLocation' => fn () => DemoLocator::enabled() ? [
+                'current' => DemoLocator::current($request),
+                'places' => array_map(fn (array $place) => [
+                    'city' => $place['city'],
+                    'country' => $place['country'],
+                ], DemoLocator::PLACES),
+            ] : null,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

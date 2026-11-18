@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DemoLocationController;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Route;
 use Keyring\Facades\Keyring;
@@ -10,6 +11,9 @@ Route::inertia('/', 'welcome')->name('home');
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
 });
+
+// The login page's "Pretend to be in" picker, with KEYRING_LOCATOR=demo.
+Route::post('demo-location', DemoLocationController::class)->name('demo-location');
 
 // While developing, see each of Keyring's emails in the browser with sample
 // content: /emails lists them, /emails/new_device shows one.
