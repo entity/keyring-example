@@ -114,16 +114,18 @@ export default function SignInMethods({
     hasSecondFactor: boolean;
     /** How many other sessions the account has, to offer signing them out. */
     otherSessions: number;
-    /** Held until the password changes, so its form starts open. */
+    /** Held until the password changes, so its form stays open. */
     mustChangePassword: boolean;
 }) {
     const [pending, setPending] = useState<Pending>(null);
-    const [changingPassword, setChangingPassword] =
-        useState(mustChangePassword);
+    const [changingPassword, setChangingPassword] = useState(false);
     const [recovery, setRecovery] = useState<Recovery>(null);
     const [busy, setBusy] = useState(false);
     const [signOutOthers, setSignOutOthers] = useState(false);
     const webauthn = supportsWebAuthn();
+    // Inertia keeps the page mounted when its props change, so the hold is
+    // read on every render and not only the first.
+    const showPasswordForm = mustChangePassword || changingPassword;
 
     // Someone else being signed in is often why a method is added or
     // removed, so the change can end the other sessions with it. Keyring
@@ -253,7 +255,10 @@ export default function SignInMethods({
                 </DropdownMenu>
             </div>
 
-            <ul className="divide-y rounded-lg border">
+            <ul
+                aria-label="Sign-in methods"
+                className="divide-y rounded-lg border"
+            >
                 <li className="p-4">
                     <div className="flex items-center gap-3">
                         <KeyRound className="size-5 shrink-0 text-muted-foreground" />
@@ -267,7 +272,7 @@ export default function SignInMethods({
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                aria-expanded={changingPassword}
+                                aria-expanded={showPasswordForm}
                                 aria-controls="change-password"
                                 onClick={() =>
                                     setChangingPassword(!changingPassword)
@@ -278,7 +283,7 @@ export default function SignInMethods({
                         )}
                     </div>
 
-                    {changingPassword && (
+                    {showPasswordForm && (
                         <div id="change-password" className="mt-4 sm:pl-8">
                             <ChangePassword
                                 onCancel={
