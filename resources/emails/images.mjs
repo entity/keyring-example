@@ -56,6 +56,9 @@ async function svg(name, colour, size) {
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${colour}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: ${colour}">${children}</svg>`;
 }
 
+// The paths of app-logo-icon.tsx, kept in step with it by hand.
+const logoMark = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 40 40" fill="#ffffff"><g transform="translate(20 20) rotate(45) scale(0.85) translate(-19.5 -21.5)"><path fill-rule="evenodd" clip-rule="evenodd" d="M9 11a9 9 0 1 1 0 18A9 9 0 0 1 9 11Zm0 5.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" /><path d="M16 17.75h23v4.5H16z" /><path d="M28.5 22h3.5v5h-3.5zM34.5 22H39v6.5h-4.5z" /></g></svg>`;
+
 mkdirSync(out, { recursive: true });
 
 const browser = await chromium.launch();
@@ -69,9 +72,12 @@ async function draw(html, file) {
         .screenshot({ path: `${out}/${file}`, omitBackground: true });
 }
 
-// The logo: a white key on an indigo square, shown at 36px.
+// The logo: the app's own mark (resources/js/components/app-logo-icon.tsx),
+// a white key on the near-black square the sidebar shows it on, at 36px.
+// The faint inner edge keeps the square visible on a dark mail client's
+// background.
 await draw(
-    `<div style="display: flex; width: 36px; height: 36px; align-items: center; justify-content: center; border-radius: 9px; background: linear-gradient(135deg, #6366f1, #4338ca)">${await svg('key-round', '#ffffff', 20)}</div>`,
+    `<div style="display: flex; box-sizing: border-box; width: 36px; height: 36px; align-items: center; justify-content: center; border-radius: 9px; background: #171717; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14)">${logoMark}</div>`,
     'logo.png',
 );
 
