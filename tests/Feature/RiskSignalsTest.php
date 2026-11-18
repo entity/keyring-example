@@ -89,6 +89,18 @@ class RiskSignalsTest extends TestCase
     }
 
     /**
+     * With the breach check on, a breached password still holds its owner
+     * on the security page, but adds nothing a stranger could build on.
+     */
+    public function test_a_breached_password_doesnt_add_to_the_owners_score()
+    {
+        $this->checkBreachedPasswords();
+
+        $this->assertSame(0, $this->scores()[Signals\BreachedPassword::class]);
+        $this->test_a_stranger_cant_add_enough_to_refuse_the_owner();
+    }
+
+    /**
      * In the week after the address changed, a sign in from a new browser
      * (15) with the change (25) is asked for more, and the activity says
      * why.

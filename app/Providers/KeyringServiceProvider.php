@@ -107,7 +107,8 @@ class KeyringServiceProvider extends ServiceProvider
         // attempts, so SuccessAfterFailures is cut from 30 to 10: 85, short
         // of 90. At 30 it would take that sign in to 105, and be refused.
         // RepeatedFactorFailures takes the password to raise, so it isn't
-        // a stranger's to add. tests/Feature/RiskSignalsTest.php checks the
+        // a stranger's to add, though the owner's own mistyped codes can
+        // add it (and SuccessAfterFailures) to their next sign in. tests/Feature/RiskSignalsTest.php checks the
         // sums: check them again when changing a score or adding a signal.
         Keyring::risk()->signals([
             NewDevice::class,
@@ -132,8 +133,12 @@ class KeyringServiceProvider extends ServiceProvider
             // with BREACHED_PASSWORD_CHECK=true, not with Keyring's default
             // (null), which only checks new passwords in production. A
             // password it finds holds the user on the security page until
-            // they choose another.
-            ...config('keyring.passwords.uncompromised') === true ? [BreachedPassword::class] : [],
+            // they choose another, whatever it scores, so it scores nothing:
+            // at Keyring's 40 it would take the owner's 75 past 90 on its
+            // own once a stranger added failed attempts.
+            ...config('keyring.passwords.uncompromised') === true
+                ? [$this->app->make(BreachedPassword::class, ['score' => 0])]
+                : [],
         ]);
 
         // Keyring's pages already match the starter kit's names (auth/login,
