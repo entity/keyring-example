@@ -1,14 +1,15 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { TriangleAlert } from 'lucide-react';
+import { ArrowRight, TriangleAlert } from 'lucide-react';
+import { ago } from '@/components/keyring/sign-in-methods';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import {
     Card,
-    CardContent,
     CardDescription,
+    CardFooter,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { ago } from '@/components/keyring/sign-in-methods';
 import { dashboard } from '@/routes';
 import { edit as editProfile } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
@@ -33,40 +34,108 @@ const alertText: Record<string, string> = {
         'A “remember me” cookie was used twice, so that session was ended',
 };
 
-const tour = [
-    {
-        title: 'Add a passkey',
-        text: 'Settings → Security → Add → Passkey. Then sign out and use "Sign in with a passkey", or pick it from the email field’s autofill.',
-        href: editSecurity(),
-    },
-    {
-        title: 'Add a second factor',
-        text: 'Everyone needs one here, so a new account is sent to Security until it has a passkey, a security key or an authenticator app. The first one comes with recovery codes.',
-        href: editSecurity(),
-    },
-    {
-        title: 'Try step-up',
-        text: 'Security settings need a verification from the last 15 minutes, with the strongest proof your account has: if you have a security key, that’s what it asks for.',
-        href: editSecurity(),
-    },
-    {
-        title: 'See your sessions',
-        text: 'Settings → Security lists every session and device. End one, or sign out everywhere else, also while adding or removing a sign-in method.',
-        href: editSecurity(),
-    },
-    {
-        title: 'Change your email',
-        text: 'The new address must confirm, and the old one gets an undo link. The emails are in storage/logs/laravel.log.',
-        href: editProfile(),
-    },
-];
+type DemoSettings = {
+    /** Which locator KEYRING_LOCATOR picked, if any. */
+    locator: 'demo' | 'cloudflare' | 'other' | null;
+    /** BREACHED_PASSWORD_CHECK. */
+    breachCheck: boolean;
+    /** The /emails previews, which only exist while running locally. */
+    emailPreviews: boolean;
+};
+
+type Step = {
+    title: string;
+    text: string;
+    /** Where to go to try it. */
+    href: string | ReturnType<typeof editSecurity>;
+    where: string;
+    /** For the ones that need a setting: whether it's on. */
+    setting?: { on: boolean; name: string };
+    external?: boolean;
+};
+
+function tour(settings: DemoSettings): Step[] {
+    return [
+        {
+            title: 'Add a passkey',
+            text: 'Add one, then sign out and use “Sign in with a passkey”, or pick it from the email field’s autofill.',
+            href: editSecurity(),
+            where: 'Settings → Security → Add',
+        },
+        {
+            title: 'Add a second factor',
+            text: 'Everyone needs one here, so a new account is sent to Security until it has a passkey, a security key or an authenticator app. The first one comes with recovery codes.',
+            href: editSecurity(),
+            where: 'Settings → Security',
+        },
+        {
+            title: 'Try step-up',
+            text: 'Security settings need a verification from the last 15 minutes, with the strongest proof your account has: if you have a security key, that’s what it asks for.',
+            href: editSecurity(),
+            where: 'Settings → Security',
+        },
+        {
+            title: 'End your other sessions',
+            text: 'Sign in from a second browser, then see both here. End one, sign out everywhere else, or tick the box to do it while adding or removing a sign-in method.',
+            href: editSecurity(),
+            where: 'Settings → Security',
+        },
+        {
+            title: 'Trip a risk signal',
+            text: 'Get the password wrong five times, wait a minute, then sign in: Keyring emails you about the failed attempts. Get the password right and the code wrong, and the next sign in asks “Was this you?”. Recent activity shows what was found and what was done.',
+            href: editSecurity(),
+            where: 'Settings → Security → Recent activity',
+        },
+        {
+            title: 'Travel faster than a plane',
+            text:
+                settings.locator === 'demo'
+                    ? 'Sign out and pick a city on the login page. Paris after London is a new country, and asks for a second factor. Tokyo a minute later is impossible travel too, and the sign in is refused.'
+                    : 'Start the app with KEYRING_LOCATOR=demo and the login page lets you pretend to be in London, Paris, New York or Tokyo, to trip the new country and impossible travel signals.',
+            href: editSecurity(),
+            where: 'Settings → Security → devices',
+            setting: {
+                on: settings.locator === 'demo',
+                name: 'KEYRING_LOCATOR=demo',
+            },
+        },
+        {
+            title: 'Use a breached password',
+            text: 'With the check on, a new password that’s in a known breach is refused, and signing in with one holds you on Security until you choose another. Every check asks Have I Been Pwned, so it’s off unless you turn it on.',
+            href: editSecurity(),
+            where: 'Settings → Security → Change password',
+            setting: {
+                on: settings.breachCheck,
+                name: 'BREACHED_PASSWORD_CHECK=true',
+            },
+        },
+        {
+            title: 'Change your email',
+            text: 'The new address must confirm, and the old one gets an undo link. For a week afterwards, a sign in counts the change as a risk signal.',
+            href: editProfile(),
+            where: 'Settings → Profile',
+        },
+        {
+            title: 'Read the emails',
+            text: settings.emailPreviews
+                ? 'Every email Keyring sends, with sample content. The ones sent for real go to storage/logs/laravel.log.'
+                : 'Emails go to storage/logs/laravel.log. While running locally, /emails shows every one Keyring sends, with sample content.',
+            href: '/emails',
+            where: '/emails',
+            setting: { on: settings.emailPreviews, name: 'APP_ENV=local' },
+            external: true,
+        },
+    ];
+}
 
 export default function Dashboard() {
-    const { keyringAlerts, replaceRecoveryCodes, statusMessage } = usePage<{
-        keyringAlerts: KeyringAlert[];
-        replaceRecoveryCodes: boolean;
-        statusMessage: string | null;
-    }>().props;
+    const { keyringAlerts, replaceRecoveryCodes, statusMessage, demoSettings } =
+        usePage<{
+            keyringAlerts: KeyringAlert[];
+            replaceRecoveryCodes: boolean;
+            statusMessage: string | null;
+            demoSettings: DemoSettings;
+        }>().props;
 
     return (
         <>
@@ -125,31 +194,89 @@ export default function Dashboard() {
                 )}
 
                 <div>
-                    <h2 className="text-lg font-semibold">Keyring example</h2>
+                    <h2 className="text-lg font-semibold">Things to try</h2>
                     <p className="text-sm text-muted-foreground">
-                        Things to try. Everything here is Keyring, swapped in
-                        for Fortify.
+                        Everything here is Keyring, swapped in for Fortify. The{' '}
+                        <a
+                            href="https://github.com/entity/keyring/tree/main/docs"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="underline underline-offset-4"
+                        >
+                            docs
+                        </a>{' '}
+                        explain each one.
                     </p>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                    {tour.map((step) => (
-                        <Link
-                            key={step.title}
-                            href={step.href}
-                            className="block"
-                        >
-                            <Card className="h-full transition-colors hover:bg-muted/50">
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {tour(demoSettings).map((step) => {
+                        const card = (
+                            <Card className="h-full gap-3 transition-colors group-hover:bg-muted/50 group-focus-visible:bg-muted/50">
                                 <CardHeader>
-                                    <CardTitle>{step.title}</CardTitle>
+                                    <div className="flex items-start justify-between gap-2">
+                                        <CardTitle className="leading-snug">
+                                            {step.title}
+                                        </CardTitle>
+                                        {step.setting && (
+                                            <Badge
+                                                variant={
+                                                    step.setting.on
+                                                        ? 'default'
+                                                        : 'outline'
+                                                }
+                                                className="shrink-0"
+                                                title={step.setting.name}
+                                            >
+                                                {step.setting.on ? 'On' : 'Off'}
+                                            </Badge>
+                                        )}
+                                    </div>
                                     <CardDescription>
                                         {step.text}
                                     </CardDescription>
                                 </CardHeader>
-                                <CardContent />
+                                <CardFooter className="mt-auto flex flex-wrap items-center gap-x-1 text-xs text-muted-foreground">
+                                    {step.setting && !step.setting.on ? (
+                                        <>
+                                            Needs{' '}
+                                            <code className="font-mono">
+                                                {step.setting.name}
+                                            </code>
+                                        </>
+                                    ) : (
+                                        <>
+                                            {step.where}
+                                            <ArrowRight className="size-3" />
+                                        </>
+                                    )}
+                                </CardFooter>
                             </Card>
-                        </Link>
-                    ))}
+                        );
+
+                        const className =
+                            'group block rounded-xl focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none';
+
+                        return step.external ? (
+                            <a
+                                key={step.title}
+                                href={step.href as string}
+                                target="_blank"
+                                rel="noreferrer"
+                                className={className}
+                            >
+                                {card}
+                            </a>
+                        ) : (
+                            <Link
+                                key={step.title}
+                                href={step.href}
+                                className={className}
+                            >
+                                {card}
+                            </Link>
+                        );
+                    })}
                 </div>
             </div>
         </>

@@ -1,15 +1,17 @@
 <?php
 
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DemoLocationController;
+use App\Http\Controllers\WelcomeController;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Route;
 use Keyring\Facades\Keyring;
 use Keyring\KeyringManager;
 
-Route::inertia('/', 'welcome')->name('home');
+Route::get('/', WelcomeController::class)->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    Route::get('dashboard', DashboardController::class)->name('dashboard');
 });
 
 // The login page's "Pretend to be in" picker, with KEYRING_LOCATOR=demo.

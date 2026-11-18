@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Support\DemoLocator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
+use Keyring\Devices\HeaderLocator;
 use Keyring\Models\Authenticator;
 use Tests\TestCase;
 
@@ -24,6 +27,28 @@ class DashboardTest extends TestCase
 
         $response = $this->get(route('dashboard'));
         $response->assertOk();
+    }
+
+    /**
+     * Some of the things to try depend on how the app was started.
+     */
+    public function test_the_dashboard_says_which_demo_settings_are_on()
+    {
+        $this->actingAs(User::factory()->withSecondFactor()->create());
+
+        $this->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
+            ->component('dashboard')
+            ->where('demoSettings', ['locator' => null, 'breachCheck' => false, 'emailPreviews' => false]));
+
+        config(['keyring.devices.locator' => DemoLocator::class, 'keyring.passwords.uncompromised' => true]);
+
+        $this->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
+            ->where('demoSettings.locator', 'demo')
+            ->where('demoSettings.breachCheck', true));
+
+        config(['keyring.devices.locator' => HeaderLocator::class]);
+
+        $this->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page->where('demoSettings.locator', 'cloudflare'));
     }
 
     /**
