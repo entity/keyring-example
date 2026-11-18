@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
-use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Writer;
 use Database\Seeders\DatabaseSeeder;
 use Inertia\Inertia;
