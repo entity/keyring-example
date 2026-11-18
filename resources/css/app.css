@@ -7,16 +7,66 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * The palette is entity/ui's: a warm gray, a blue accent, and deep-gray for
+ * dark mode. The shadcn tokens further down map onto it, so every component
+ * picks it up.
+ */
 @theme {
     --font-sans:
-        'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
-        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-        'Noto Color Emoji';
+        'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
     --radius-sm: calc(var(--radius) - 4px);
 
+    --color-gray-50: oklch(98.26% 0.002 67);
+    --color-gray-100: oklch(96.87% 0.002 15.1);
+    --color-gray-150: oklch(95.42% 0.003 38.5);
+    --color-gray-200: oklch(92.22% 0.006 42.8);
+    --color-gray-250: oklch(89.17% 0.006 42.9);
+    --color-gray-300: oklch(85.95% 0.008 36.2);
+    --color-gray-350: oklch(83.62% 0.006 42.9);
+    --color-gray-400: oklch(79.58% 0.006 30.5);
+    --color-gray-450: oklch(74.66% 0.004 38.8);
+    --color-gray-500: oklch(61.31% 0.005 33.9);
+    --color-gray-550: oklch(54.44% 0.004 16.6);
+    --color-gray-600: oklch(43.65% 0.003 48.3);
+    --color-gray-700: oklch(34.13% 0.002 67.5);
+    --color-gray-750: oklch(30.08% 0.002 106.8);
+    --color-gray-800: oklch(25.3% 0.001 16.5);
+    --color-gray-900: oklch(20.58% 0.002 16.7);
+    --color-gray-950: oklch(17.42% 0.002 16.8);
+
+    --color-deep-gray-500: #4a4b50;
+    --color-deep-gray-600: #3b3c40;
+    --color-deep-gray-700: #313338;
+    --color-deep-gray-800: #28292e;
+    --color-deep-gray-850: #232529;
+    --color-deep-gray-900: #1f2024;
+    --color-deep-gray-950: #1a1b1f;
+    --color-deep-gray-975: #17181c;
+    --color-deep-gray-1000: #131417;
+
+    --color-accent-0: oklch(0.971 0.01 264);
+    --color-accent-50: oklch(0.9 0.035 264);
+    --color-accent-100: oklch(0.83 0.072 264);
+    --color-accent-200: oklch(0.74 0.105 265);
+    --color-accent-300: oklch(0.677 0.135 265);
+    --color-accent-400: oklch(0.62 0.15 266);
+    --color-accent-500: oklch(0.564 0.152 266);
+    --color-accent-600: oklch(0.501 0.14 267);
+    --color-accent-700: oklch(0.429 0.125 268);
+    --color-accent-800: oklch(0.351 0.1 270);
+    --color-accent-900: oklch(0.268 0.072 271);
+
+    --ease-out-quart: cubic-bezier(0.165, 0.84, 0.44, 1);
+    --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Tokens that change with the theme, so the utilities read the variables. */
+@theme inline {
     --color-background: var(--background);
     --color-foreground: var(--foreground);
 
@@ -27,9 +77,11 @@
     --color-popover-foreground: var(--popover-foreground);
 
     --color-primary: var(--primary);
+    --color-primary-hover: var(--primary-hover);
     --color-primary-foreground: var(--primary-foreground);
 
     --color-secondary: var(--secondary);
+    --color-secondary-hover: var(--secondary-hover);
     --color-secondary-foreground: var(--secondary-foreground);
 
     --color-muted: var(--muted);
@@ -39,11 +91,18 @@
     --color-accent-foreground: var(--accent-foreground);
 
     --color-destructive: var(--destructive);
+    --color-destructive-hover: var(--destructive-hover);
     --color-destructive-foreground: var(--destructive-foreground);
 
     --color-border: var(--border);
     --color-input: var(--input);
     --color-ring: var(--ring);
+
+    /* Surfaces: the ground under the panel, a tinted well, a raised control and a field. */
+    --color-ground: var(--ground);
+    --color-tint: var(--tint);
+    --color-raised: var(--raised);
+    --color-field: var(--field);
 
     --color-chart-1: var(--chart-1);
     --color-chart-2: var(--chart-2);
@@ -59,82 +118,194 @@
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
+
+    /* Elevation: a fine ring plus a short, crisp drop. Dark mode swaps the ring for a solid outline. */
+    --shadow-raised: var(--elevation-raised);
+    --shadow-card: var(--elevation-card);
+    --shadow-panel: var(--elevation-panel);
+    --shadow-inset: var(--elevation-inset);
+    --shadow-field: var(--elevation-field);
+    --shadow-popover: var(--elevation-popover);
+    --shadow-dialog: var(--elevation-dialog);
+    --shadow-primary: var(--elevation-primary);
+    --shadow-danger: var(--elevation-danger);
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --destructive-foreground: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.87 0 0);
+    --background: #ffffff;
+    --foreground: var(--color-gray-950);
+    --card: #ffffff;
+    --card-foreground: var(--color-gray-950);
+    --popover: #ffffff;
+    --popover-foreground: var(--color-gray-950);
+    --primary: var(--color-accent-500);
+    --primary-hover: var(--color-accent-600);
+    --primary-foreground: #ffffff;
+    --secondary: var(--color-gray-100);
+    --secondary-hover: var(--color-gray-150);
+    --secondary-foreground: var(--color-gray-950);
+    --muted: var(--color-gray-100);
+    /* gray-550 rather than entity/ui's gray-500, which misses 4.5:1 on white. */
+    --muted-foreground: var(--color-gray-550);
+    --accent: var(--color-gray-100);
+    --accent-foreground: var(--color-gray-950);
+    --destructive: oklch(61.93% 0.207 31.5);
+    --destructive-hover: oklch(55% 0.19 31.5);
+    --destructive-foreground: oklch(52% 0.18 31.6);
+    --border: var(--color-gray-200);
+    --input: var(--color-gray-250);
+    --ring: var(--color-accent-500);
+    --ground: var(--color-gray-50);
+    --tint: var(--color-gray-50);
+    --raised: #ffffff;
+    --field: #ffffff;
     --chart-1: oklch(0.646 0.222 41.116);
     --chart-2: oklch(0.6 0.118 184.704);
     --chart-3: oklch(0.398 0.07 227.392);
     --chart-4: oklch(0.828 0.189 84.429);
     --chart-5: oklch(0.769 0.188 70.08);
     --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.87 0 0);
+    --sidebar: var(--color-gray-50);
+    --sidebar-foreground: var(--color-gray-600);
+    --sidebar-primary: var(--color-gray-950);
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: oklch(92.22% 0.006 42.8 / 0.5);
+    --sidebar-accent-foreground: var(--color-gray-950);
+    --sidebar-border: var(--color-gray-200);
+    --sidebar-ring: var(--color-accent-500);
+
+    --elevation-raised:
+        0 0 0 1px oklch(17.42% 0.002 16.8 / 0.09),
+        0 1px 2px 0 oklch(17.42% 0.002 16.8 / 0.08);
+    --elevation-card:
+        0 0 0 1px oklch(25.3% 0.001 16.5 / 0.08),
+        0 1px 2px 0 oklch(17.42% 0.002 16.8 / 0.05),
+        0 4px 8px -4px oklch(17.42% 0.002 16.8 / 0.06);
+    --elevation-panel:
+        0 0 0 1px oklch(25.3% 0.001 16.5 / 0.06),
+        0 1px 3px 0 oklch(17.42% 0.002 16.8 / 0.05);
+    --elevation-inset:
+        inset 0 0 0 1px var(--color-gray-150),
+        0 1px 2px 0 oklch(17.42% 0.002 16.8 / 0.04);
+    --elevation-field:
+        0 0 0 1px oklch(17.42% 0.002 16.8 / 0.1),
+        0 1px 2px 0 oklch(17.42% 0.002 16.8 / 0.06);
+    --elevation-popover:
+        0 0 0 1px rgb(39 44 48 / 0.08), 0 4px 8px 0 rgb(39 44 48 / 0.1),
+        0 14px 40px 0 rgb(39 44 48 / 0.06);
+    --elevation-dialog:
+        0 0 0 1px rgb(1 33 57 / 0.12), 0 0 0 7px rgb(255 255 255 / 0.3),
+        0 10px 13px 0 rgb(0 0 0 / 0.06), 0 17px 17px 0 rgb(0 0 0 / 0.05),
+        0 28px 20px 0 rgb(0 0 0 / 0.03);
+    --elevation-primary:
+        inset 0 1px 0 0 rgb(255 255 255 / 0.18),
+        0 0 0 1px var(--color-accent-600),
+        0 1px 2px 0 oklch(0.268 0.072 271 / 0.3);
+    --elevation-danger:
+        inset 0 1px 0 0 rgb(255 255 255 / 0.18), 0 0 0 1px oklch(55% 0.19 31.5),
+        0 1px 2px 0 oklch(34% 0.09 31.6 / 0.3);
+
+    /* The soft wash behind hero and header cards. */
+    --wash-1: oklch(0.93 0.045 264 / 0.75);
+    --wash-2: oklch(0.95 0.04 200 / 0.45);
+    --auth-glow: var(--color-accent-300);
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.145 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.145 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.985 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.396 0.141 25.723);
-    --destructive-foreground: oklch(0.637 0.237 25.331);
-    --border: oklch(0.269 0 0);
-    --input: oklch(0.269 0 0);
-    --ring: oklch(0.439 0 0);
+    --background: var(--color-deep-gray-975);
+    --foreground: oklch(0.96 0.003 270);
+    --card: var(--color-deep-gray-900);
+    --card-foreground: oklch(0.96 0.003 270);
+    --popover: var(--color-deep-gray-850);
+    --popover-foreground: oklch(0.96 0.003 270);
+    --primary: var(--color-accent-500);
+    --primary-hover: var(--color-accent-400);
+    --primary-foreground: #ffffff;
+    --secondary: var(--color-deep-gray-800);
+    --secondary-hover: var(--color-deep-gray-700);
+    --secondary-foreground: oklch(0.96 0.003 270);
+    --muted: var(--color-deep-gray-850);
+    --muted-foreground: oklch(0.7 0.008 270);
+    --accent: var(--color-deep-gray-800);
+    --accent-foreground: oklch(0.96 0.003 270);
+    --destructive: oklch(58% 0.19 29);
+    --destructive-hover: oklch(63% 0.19 29);
+    --destructive-foreground: oklch(0.74 0.15 27);
+    --border: var(--color-deep-gray-700);
+    --input: var(--color-deep-gray-600);
+    --ring: var(--color-accent-300);
+    --ground: var(--color-deep-gray-1000);
+    --tint: var(--color-deep-gray-950);
+    --raised: var(--color-deep-gray-800);
+    --field: var(--color-deep-gray-1000);
     --chart-1: oklch(0.488 0.243 264.376);
     --chart-2: oklch(0.696 0.17 162.48);
     --chart-3: oklch(0.769 0.188 70.08);
     --chart-4: oklch(0.627 0.265 303.9);
     --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.985 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(0.269 0 0);
-    --sidebar-ring: oklch(0.439 0 0);
+    --sidebar: var(--color-deep-gray-1000);
+    --sidebar-foreground: oklch(0.76 0.006 270);
+    --sidebar-primary: oklch(0.96 0.003 270);
+    --sidebar-primary-foreground: var(--color-deep-gray-1000);
+    --sidebar-accent: rgb(255 255 255 / 0.04);
+    --sidebar-accent-foreground: oklch(0.96 0.003 270);
+    --sidebar-border: var(--color-deep-gray-700);
+    --sidebar-ring: var(--color-accent-300);
+
+    --elevation-raised:
+        0 0 0 0.5px var(--color-deep-gray-500), 0 1px 2px 0 rgb(0 0 0 / 0.5);
+    --elevation-card:
+        0 0 0 0.5px var(--color-deep-gray-700), 0 1px 2px 0 rgb(0 0 0 / 0.5),
+        0 4px 8px -4px rgb(0 0 0 / 0.4);
+    --elevation-panel:
+        0 0 0 0.5px var(--color-deep-gray-800), 0 1px 2px 0 rgb(0 0 0 / 0.5);
+    --elevation-inset: inset 0 0 0 0.5px var(--color-deep-gray-700);
+    --elevation-field:
+        0 0 0 0.5px var(--color-deep-gray-600),
+        inset 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --elevation-popover:
+        0 0 0 0.5px var(--color-deep-gray-600), 0 4px 8px -4px rgb(0 0 0 / 0.6),
+        0 14px 40px 0 rgb(0 0 0 / 0.35);
+    --elevation-dialog:
+        0 0 0 0.5px var(--color-deep-gray-600),
+        0 0 0 7px rgb(255 255 255 / 0.03), 0 24px 48px -12px rgb(0 0 0 / 0.7);
+    --elevation-primary:
+        inset 0 1px 0 0 rgb(255 255 255 / 0.16),
+        0 0 0 0.5px var(--color-accent-400), 0 1px 2px 0 rgb(0 0 0 / 0.5);
+    --elevation-danger:
+        inset 0 1px 0 0 rgb(255 255 255 / 0.16), 0 0 0 0.5px oklch(63% 0.19 29),
+        0 1px 2px 0 rgb(0 0 0 / 0.5);
+
+    --wash-1: oklch(0.42 0.11 266 / 0.32);
+    --wash-2: oklch(0.4 0.06 200 / 0.18);
+    --auth-glow: var(--color-accent-800);
+}
+
+/* A soft colour wash, top left, for hero and header cards. */
+@utility bg-wash {
+    background-image:
+        radial-gradient(90% 120% at 0% 0%, var(--wash-1) 0%, transparent 60%),
+        radial-gradient(70% 90% at 100% 0%, var(--wash-2) 0%, transparent 65%);
+}
+
+/* The sign-in pages' backdrop: blue at the top, fading to the page. */
+@utility bg-auth-backdrop {
+    background-color: var(--background);
+    background-image: radial-gradient(
+        125% 125% at 50% 90%,
+        var(--background) 40%,
+        var(--auth-glow) 100%
+    );
 }
 
 @layer base {
     * {
         @apply border-border;
+    }
+
+    html {
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
     }
 
     body {
