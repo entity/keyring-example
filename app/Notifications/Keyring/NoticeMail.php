@@ -112,7 +112,10 @@ final class NoticeMail
                 'tone' => 'warning',
                 'icon' => 'shield-alert',
                 'eyebrow' => __('Unusual activity'),
-                'intro' => __('We noticed something unusual on your account, so we asked for extra verification.'),
+                // Whatever was done about it (asking for more, refusing the
+                // sign in, or nothing) is up to the risk level, so the
+                // intro doesn't say.
+                'intro' => __('We noticed something unusual about a sign in to your account.'),
                 'adviceTitle' => __('Was this you?'),
                 'advice' => __('Then there\'s nothing to do. If it wasn\'t, change your password and check your sign-in methods straight away.'),
             ],

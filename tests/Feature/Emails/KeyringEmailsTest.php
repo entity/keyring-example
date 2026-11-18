@@ -189,6 +189,10 @@ class KeyringEmailsTest extends TestCase
     {
         $mail = $this->render((new SuspiciousActivity(when: 'now', reasons: 'Signing in from a new country (NL). 5 failed second factors in the last 1h.'))->toMail(new User));
 
+        // The same email goes out whether the sign in was let through,
+        // asked for more or refused, so it doesn't say which.
+        $this->assertStringContainsString('We noticed something unusual about a sign in to your account.', $mail['text']);
+        $this->assertStringNotContainsString('extra verification', $mail['text']);
         $this->assertStringContainsString('What we noticed', $mail['html']);
         $this->assertStringContainsString("- Signing in from a new country (NL).\n- 5 failed second factors in the last 1h.", $mail['text']);
     }
