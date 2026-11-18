@@ -101,7 +101,7 @@ function tour(settings: DemoSettings): Step[] {
         },
         {
             title: 'Use a breached password',
-            text: 'With the check on, a new password that’s in a known breach is refused, and signing in with one holds you on Security until you choose another. Every check asks Have I Been Pwned, so it’s off unless you turn it on.',
+            text: 'With the check on, signing in with a password from a known breach holds you on Security until you choose another (the demo accounts’ “password” is one), and a breached new password is refused. Every check asks Have I Been Pwned, so it’s off unless you turn it on.',
             href: editSecurity(),
             where: 'Settings → Security → Change password',
             setting: {

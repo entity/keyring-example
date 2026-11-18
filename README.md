@@ -1,6 +1,6 @@
 # Keyring example
 
-Laravel's React starter kit with Fortify taken out and [Keyring](../keyring) put in. Use it to demo Keyring, or to see what moving an app from Fortify to Keyring involves.
+Laravel's React starter kit with Fortify taken out and [Keyring](https://github.com/entity/keyring) put in. Use it to play with Keyring, or to see what moving an app from Fortify to Keyring involves. The welcome page at `http://localhost:8000` has the [demo accounts](#demo-accounts) (with a QR code for the authenticator app) and a short tour, and the dashboard has a card for each thing to try, saying which need a setting turned on.
 
 What you can try:
 
@@ -10,8 +10,10 @@ What you can try:
 - Add an email code, and see what it is: an extra step after your password, not a second factor. The session stays at AAL1 and the app still asks for a real one.
 - Step-up: Settings → Security and deleting your account need a verification from the last 15 minutes, with the strongest proof the account has. Someone with a security key has to use it to add or remove a sign-in method; a password and an authenticator app's code aren't enough for them.
 - Change your email from Settings → Profile. The new address has to confirm, and the old one gets a link to undo the change. The old address has to confirm too, unless you signed in with a second factor the account has had for a week (the two-factor demo account's is dated a month back).
-- See your devices and your sessions, end one or sign out everywhere else (also while adding or removing a sign-in method, with the checkbox), and read the security log.
+- See your devices and your sessions, with where they are when there's a [locator](#locations), end one or sign out everywhere else (also while adding or removing a sign-in method, with the checkbox), and read the security log: which factors each sign in used, from which browser, and what risk found.
 - Get a "Was this you?" banner on the dashboard after failed sign-in attempts, and a reminder to make new recovery codes once one has been used.
+- Trip the [risk signals](#risk-signals): get the password wrong five times, wait a minute and sign in, and you're emailed about it. With the demo locator, travel from London to Tokyo in a minute and the sign in is refused.
+- Turn on the breached password check (`BREACHED_PASSWORD_CHECK=true`) and sign in to a demo account: `password` is in every breach list, so you're held on Settings → Security until you choose another. A breached new password is refused too.
 - Be made to change your password: `php artisan tinker --execute 'Keyring\Facades\Keyring::requirePasswordChange(App\Models\User::firstWhere("email", "2fa@keyring.test"), "Demo");'`, then sign in. Every page sends you to Settings → Security until you have.
 
 ## Setup
@@ -42,6 +44,43 @@ Keyring clears out old devices, sessions, email changes and log entries with `ke
 Passkeys need a secure context. `http://localhost` counts, so open the app as `localhost`, not `127.0.0.1`. `APP_URL` has to match the address in your browser, because Keyring builds the passkey origin and every emailed link from it.
 
 Emails (codes, email change links, security notices) go to `storage/logs/laravel.log`. `composer dev` shows that log as it's written. To see how they look, open `http://localhost:8000/emails` while running locally: it lists every email Keyring sends and shows each with sample content.
+
+## Risk signals
+
+`KeyringServiceProvider` runs every one of Keyring's [risk signals](https://github.com/entity/keyring/blob/main/docs/risk.md), and Keyring's own response does the rest: a second factor at medium, an email to the owner from high, a refused sign in at critical.
+
+| Signal                                                                                                        | Here                                                                                                          |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `NewDevice`, `InactiveAccount`, `RepeatedFactorFailures`, `SuccessAfterFailures`, `SessionFingerprintChanged` | always on                                                                                                     |
+| `RecentlyChangedRecovery`                                                                                     | always on: email changes are on, and an address that changed in the last week shouldn't be trusted on its own |
+| `NewCountry`, `ImpossibleTravel`                                                                              | always on, and quiet until there's a [locator](#locations)                                                    |
+| `BreachedPassword`                                                                                            | with `BREACHED_PASSWORD_CHECK=true`, since it calls Have I Been Pwned at every password sign in               |
+
+A new country and impossible travel together score 90, which refuses the sign in.
+
+### Locations
+
+Nothing is located by default. `KEYRING_LOCATOR` in `.env` picks a locator (`config/keyring.php`):
+
+```ini
+KEYRING_LOCATOR=demo         # a "Pretend to be in" picker on the login page, for localhost only
+KEYRING_LOCATOR=cloudflare   # Cloudflare's CF-IPCountry (and city and coordinates) headers
+```
+
+`demo` is `App\Support\DemoLocator`, a demo aid and nothing more: it puts each request wherever the login page's picker says (a cookie, London until you pick), so the location signals can be tried on a machine where every request comes from `127.0.0.1`. Paris after London is a new country, which asks for a second factor. Tokyo or New York straight after is impossible travel too, and the sign in is refused (and logged, and emailed). Locations also show on Settings → Security.
+
+`cloudflare` is Keyring's `HeaderLocator`. Only use it when every request has to come through Cloudflare: anyone who can reach the app directly can send those headers and say where they are. For a real lookup by IP address, see [Locations with stevebauman/location](https://github.com/entity/keyring/blob/main/docs/recipes.md#locations-with-stevebaumanlocation).
+
+### Breached passwords
+
+Checking passwords against Have I Been Pwned is a network call, so it's off here, production included (Keyring's own default runs it in production):
+
+```ini
+BREACHED_PASSWORD_CHECK=true              # refuse breached new passwords, and add the BreachedPassword signal
+BREACHED_PASSWORD_REFUSE_UNCHECKED=true   # refuse a new password while the service can't be reached
+```
+
+Only the first five characters of the password's SHA-1 leave the server.
 
 ## Emails
 
@@ -102,12 +141,13 @@ php artisan example:reset
 
 - `laravel/fortify` and `laravel/chisel` removed. `entity/keyring` added, with its migrations published.
 - `App\Models\User` uses `HasKeyring`. Email and password can only change through Keyring's flows.
-- `App\Providers\KeyringServiceProvider` turns on every factor, a two-factor policy once someone has a second factor, the `keyring.enrolled` middleware that makes everyone add one, every security email and risk signals.
-- `config/keyring.php` has the features, the page people are sent to for a second factor or a new password (both `/settings/security`), and the list of words a password mustn't be made up of.
+- `App\Providers\KeyringServiceProvider` turns on every factor, a two-factor policy once someone has a second factor, the `keyring.enrolled` middleware that makes everyone add one, every security email and every risk signal (the breached password one behind a setting).
+- `config/keyring.php` has the features, the page people are sent to for a second factor or a new password (both `/settings/security`), the list of words a password mustn't be made up of, the breached password check and the locator, both picked from `.env`.
 - `app/Notifications/Keyring` holds every email Keyring sends, built from the Maizzle templates in `resources/emails`.
 - The kit's page names already match Keyring's (`auth/login`, `auth/challenge`…), so only step-up confirmation is remapped, to the challenge page.
 - New pages: `auth/challenge` (second step and step-up), and the pages emailed links open, each with one button that posts the link's token or signature in the body: `auth/email-change`, `auth/device-report` and `auth/email-verification`. Login gained passkey sign-in, and shows Keyring's message for whatever sent you there.
-- Settings → Security lists sign-in methods, devices, sessions and recent activity. It talks to Keyring's JSON routes through `@entity/keyring` (`resources/js/keyring/actions.ts` handles the 423 step-up answer and shows Keyring's own messages).
+- A welcome page about the demo instead of Laravel's, a key for a logo, and sidebar links to this repository and Keyring's docs.
+- Settings → Security lists sign-in methods (the password form opens from the password's row), where you're signed in (devices and sessions, with one "Sign out everywhere else"), and recent activity. It talks to Keyring's JSON routes through `@entity/keyring` (`resources/js/keyring/actions.ts` handles the 423 step-up answer and shows Keyring's own messages).
 - `HandleInertiaRequests` shares the flashed `status` and its message from `Keyring::statusMessage()`.
 - Settings → Profile changes the name directly and the email through Keyring's confirmed flow.
 - The kit's Fortify tests were rewritten against Keyring (`php artisan test`).
@@ -127,6 +167,7 @@ Keyring's docs have a page on what to turn on for each level of [OWASP ASVS 5.0.
 | Seeing and ending sessions, and the offer to end the others when a sign-in method changes (7.4.3, 7.5.2) | Settings → Security                                                                      |
 | Emails about changes and suspicious sign ins (6.3.5, 6.3.7)                                              | every notice registered in `KeyringServiceProvider`                                      |
 | The security log, pruned daily                                                                           | `Features::securityLog()`, and Laravel's scheduler                                       |
+| Passwords checked against breaches (6.2.12)                                                              | off here, as it's a network call: `BREACHED_PASSWORD_CHECK=true` turns it on             |
 
 `tests/Feature/KeyringConformanceTest.php` runs Keyring's own conformance suite against this setup.
 
