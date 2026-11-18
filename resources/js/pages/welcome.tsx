@@ -227,6 +227,13 @@ export default function Welcome({ demoAccounts }: Props) {
                                         <Credential
                                             label="Secret"
                                             value={demoAccounts.totpSecret}
+                                            // In fours, as authenticator apps
+                                            // show it, and four to a line, so
+                                            // no group is left on its own.
+                                            // Copying takes it whole.
+                                            shown={inFours(
+                                                demoAccounts.totpSecret,
+                                            )}
                                         />
                                         <Credential
                                             label="Recovery code"
@@ -269,9 +276,29 @@ export default function Welcome({ demoAccounts }: Props) {
 }
 
 /**
- * One line of a demo account, with a button to copy it.
+ * A secret in groups of four, the way authenticator apps show one, with
+ * four groups to a line.
  */
-function Credential({ label, value }: { label: string; value: string }) {
+function inFours(secret: string): string {
+    return (secret.match(/.{1,16}/g) ?? [secret])
+        .map((line) => line.match(/.{1,4}/g)?.join(' ') ?? line)
+        .join('\n');
+}
+
+/**
+ * One line of a demo account, with a button to copy it. Long values wrap
+ * at their spaces and hyphens, and only mid-word when a word can't fit.
+ */
+function Credential({
+    label,
+    value,
+    shown = value,
+}: {
+    label: string;
+    value: string;
+    /** How it's shown, when that isn't how it's copied. */
+    shown?: string;
+}) {
     const [copied, copy] = useClipboard();
 
     return (
@@ -280,8 +307,8 @@ function Credential({ label, value }: { label: string; value: string }) {
                 {label}
             </dt>
             <dd className="flex min-w-0 flex-1 items-center gap-2">
-                <span className="min-w-0 flex-1 font-mono text-[0.8125rem] break-all">
-                    {value}
+                <span className="min-w-0 flex-1 font-mono text-[0.8125rem] wrap-anywhere whitespace-pre-line">
+                    {shown}
                 </span>
                 <Button
                     type="button"
