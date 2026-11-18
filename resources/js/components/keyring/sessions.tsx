@@ -7,8 +7,14 @@ import { router } from '@inertiajs/react';
 import { MonitorSmartphone } from 'lucide-react';
 import { useState } from 'react';
 import { ago } from '@/components/keyring/sign-in-methods';
+import RowIcon from '@/components/keyring/row-icon';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    InsetCardDescription,
+    InsetCardList,
+    InsetCardTitle,
+} from '@/components/ui/inset-card';
 import { Spinner } from '@/components/ui/spinner';
 import { run } from '@/keyring/actions';
 import { type Place, place } from '@/keyring/format';
@@ -67,23 +73,23 @@ export default function Sessions({
     }
 
     return (
-        <div className="space-y-3">
-            <div>
-                <h3 className="text-sm font-medium">Sessions</h3>
-                <p className="text-sm text-muted-foreground">
+        <div className="flex flex-col gap-1">
+            <div className="px-3 pt-2 pb-1">
+                <InsetCardTitle as="h3">Sessions</InsetCardTitle>
+                <InsetCardDescription>
                     Each time your account is signed in. A session ends after
                     two hours unused, or 14 days away with “Remember me”, and 30
                     days after it signed in.
-                </p>
+                </InsetCardDescription>
             </div>
 
-            <ul className="divide-y rounded-lg border">
+            <InsetCardList>
                 {sessions.map((session) => (
                     <li
                         key={session.id}
-                        className="flex items-center gap-3 p-4"
+                        className="flex items-center gap-3 px-4 py-3"
                     >
-                        <MonitorSmartphone className="size-5 shrink-0 text-muted-foreground" />
+                        <RowIcon icon={MonitorSmartphone} />
                         <div className="min-w-0 flex-1">
                             <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium">
                                 <span className="truncate">
@@ -112,7 +118,7 @@ export default function Sessions({
                             </p>
                         </div>
                         <Button
-                            variant="ghost"
+                            variant="secondary"
                             size="sm"
                             disabled={ending !== null}
                             onClick={() => void end(session)}
@@ -122,7 +128,7 @@ export default function Sessions({
                         </Button>
                     </li>
                 ))}
-            </ul>
+            </InsetCardList>
         </div>
     );
 }

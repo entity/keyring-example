@@ -1,10 +1,15 @@
 import { endOtherSessions, type Session } from '@entity/keyring/react';
 import { LogOut } from 'lucide-react';
 import { useState } from 'react';
-import Heading from '@/components/heading';
 import Devices, { type DeviceRow } from '@/components/keyring/devices';
 import Sessions from '@/components/keyring/sessions';
 import { Button } from '@/components/ui/button';
+import {
+    InsetCard,
+    InsetCardDescription,
+    InsetCardHeader,
+    InsetCardTitle,
+} from '@/components/ui/inset-card';
 import { Spinner } from '@/components/ui/spinner';
 import { run } from '@/keyring/actions';
 
@@ -41,17 +46,18 @@ export default function SignedIn({
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <Heading
-                    variant="small"
-                    title="Where you’re signed in"
-                    description={
-                        elsewhere
+        <InsetCard aria-labelledby="signed-in">
+            <InsetCardHeader>
+                <div>
+                    <InsetCardTitle id="signed-in">
+                        Where you’re signed in
+                    </InsetCardTitle>
+                    <InsetCardDescription>
+                        {elsewhere
                             ? 'If you see something you don’t recognise, sign out everywhere else and change your password.'
-                            : 'Only here, in this browser.'
-                    }
-                />
+                            : 'Only here, in this browser.'}
+                    </InsetCardDescription>
+                </div>
 
                 {elsewhere && (
                     <Button
@@ -65,11 +71,11 @@ export default function SignedIn({
                         Sign out everywhere else
                     </Button>
                 )}
-            </div>
+            </InsetCardHeader>
 
             <Devices devices={devices} />
 
             <Sessions sessions={sessions} locations={locations} />
-        </div>
+        </InsetCard>
     );
 }

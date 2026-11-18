@@ -6,9 +6,15 @@ import {
     ShieldAlert,
     type LucideIcon,
 } from 'lucide-react';
-import Heading from '@/components/heading';
 import { ago } from '@/components/keyring/sign-in-methods';
 import { Badge } from '@/components/ui/badge';
+import {
+    InsetCard,
+    InsetCardDescription,
+    InsetCardHeader,
+    InsetCardList,
+    InsetCardTitle,
+} from '@/components/ui/inset-card';
 import { factorList, factorName, fullDate } from '@/keyring/format';
 
 export type ActivityRow = {
@@ -259,10 +265,10 @@ function iconFor(type: string): LucideIcon {
 /** How each of Keyring's four severities is shown. Info has no badge. */
 const severities: Record<
     string,
-    { label: string; variant: 'secondary' | 'outline' | 'destructive' }
+    { label: string; variant: 'default' | 'warning' | 'destructive' }
 > = {
-    notice: { label: 'Notice', variant: 'secondary' },
-    warning: { label: 'Warning', variant: 'outline' },
+    notice: { label: 'Notice', variant: 'default' },
+    warning: { label: 'Warning', variant: 'warning' },
     critical: { label: 'Critical', variant: 'destructive' },
 };
 
@@ -271,14 +277,20 @@ const severities: Record<
  */
 export default function Activity({ activity }: { activity: ActivityRow[] }) {
     return (
-        <div className="space-y-6">
-            <Heading
-                variant="small"
-                title="Recent activity"
-                description="Sign ins, security changes and anything that was refused on your account. Entries are kept for 180 days."
-            />
+        <InsetCard aria-labelledby="recent-activity">
+            <InsetCardHeader>
+                <div>
+                    <InsetCardTitle id="recent-activity">
+                        Recent activity
+                    </InsetCardTitle>
+                    <InsetCardDescription>
+                        Sign ins, security changes and anything that was refused
+                        on your account. Entries are kept for 180 days.
+                    </InsetCardDescription>
+                </div>
+            </InsetCardHeader>
 
-            <ul className="divide-y rounded-lg border">
+            <InsetCardList>
                 {activity.map((event) => {
                     const { title, detail } = describe(event);
                     const Icon = iconFor(event.type);
@@ -293,7 +305,7 @@ export default function Activity({ activity }: { activity: ActivityRow[] }) {
                                 className={
                                     event.severity === 'warning' ||
                                     event.severity === 'critical'
-                                        ? 'mt-0.5 size-4 shrink-0 text-destructive'
+                                        ? 'mt-0.5 size-4 shrink-0 text-destructive-foreground'
                                         : 'mt-0.5 size-4 shrink-0 text-muted-foreground'
                                 }
                                 aria-hidden="true"
@@ -330,7 +342,7 @@ export default function Activity({ activity }: { activity: ActivityRow[] }) {
                         Nothing yet.
                     </li>
                 )}
-            </ul>
-        </div>
+            </InsetCardList>
+        </InsetCard>
     );
 }

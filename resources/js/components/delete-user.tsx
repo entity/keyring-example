@@ -1,7 +1,13 @@
 import { Form } from '@inertiajs/react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
-import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
+import {
+    InsetCard,
+    InsetCardBody,
+    InsetCardDescription,
+    InsetCardHeader,
+    InsetCardTitle,
+} from '@/components/ui/inset-card';
 import {
     Dialog,
     DialogClose,
@@ -14,24 +20,27 @@ import {
 
 export default function DeleteUser() {
     return (
-        <div className="space-y-6">
-            <Heading
-                variant="small"
-                title="Delete account"
-                description="Delete your account and all of its resources"
-            />
-            <div className="space-y-4 rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-200/10 dark:bg-red-700/10">
-                <div className="relative space-y-0.5 text-red-600 dark:text-red-100">
-                    <p className="font-medium">Warning</p>
-                    <p className="text-sm">
-                        Please proceed with caution, this cannot be undone.
-                    </p>
+        <InsetCard aria-labelledby="delete-account">
+            <InsetCardHeader>
+                <div>
+                    <InsetCardTitle id="delete-account">
+                        Delete account
+                    </InsetCardTitle>
+                    <InsetCardDescription>
+                        Delete your account and all of its resources
+                    </InsetCardDescription>
                 </div>
+            </InsetCardHeader>
+            <InsetCardBody className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-muted-foreground">
+                    Please proceed with caution, this cannot be undone.
+                </p>
 
                 <Dialog>
                     <DialogTrigger asChild>
                         <Button
-                            variant="destructive"
+                            variant="outline"
+                            className="shrink-0 self-start text-destructive-foreground sm:self-auto"
                             data-test="delete-user-button"
                         >
                             Delete account
@@ -60,7 +69,7 @@ export default function DeleteUser() {
                                     <DialogFooter className="gap-2">
                                         <DialogClose asChild>
                                             <Button
-                                                variant="secondary"
+                                                variant="outline"
                                                 onClick={() =>
                                                     resetAndClearErrors()
                                                 }
@@ -87,7 +96,7 @@ export default function DeleteUser() {
                         </Form>
                     </DialogContent>
                 </Dialog>
-            </div>
-        </div>
+            </InsetCardBody>
+        </InsetCard>
     );
 }

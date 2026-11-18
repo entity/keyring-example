@@ -2,14 +2,9 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { ArrowRight, TriangleAlert } from 'lucide-react';
 import { ago } from '@/components/keyring/sign-in-methods';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import StatusMessage from '@/components/status-message';
 import { Badge } from '@/components/ui/badge';
-import {
-    Card,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { InsetCard, InsetCardBody } from '@/components/ui/inset-card';
 import { dashboard } from '@/routes';
 import { edit as editProfile } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
@@ -153,7 +148,7 @@ export default function Dashboard() {
     return (
         <>
             <Head title="Dashboard" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+            <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
                 {keyringAlerts.length > 0 && (
                     <Alert variant="destructive">
                         <TriangleAlert />
@@ -182,7 +177,7 @@ export default function Dashboard() {
                 )}
 
                 {replaceRecoveryCodes && (
-                    <Alert>
+                    <Alert variant="warning">
                         <TriangleAlert />
                         <AlertTitle>Make new recovery codes</AlertTitle>
                         <AlertDescription>
@@ -201,13 +196,13 @@ export default function Dashboard() {
                 )}
 
                 {statusMessage && (
-                    <p className="text-sm font-medium text-green-600">
-                        {statusMessage}
-                    </p>
+                    <StatusMessage>{statusMessage}</StatusMessage>
                 )}
 
-                <div>
-                    <h2 className="text-lg font-semibold">Things to try</h2>
+                <div className="space-y-1">
+                    <h2 className="text-xl font-medium tracking-tight">
+                        Things to try
+                    </h2>
                     <p className="text-sm text-muted-foreground">
                         Everything here is Keyring, swapped in for Fortify. The{' '}
                         <a
@@ -225,50 +220,51 @@ export default function Dashboard() {
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {tour(demoSettings).map((step) => {
                         const card = (
-                            <Card className="h-full gap-3 transition-colors group-hover:bg-muted/50 group-focus-visible:bg-muted/50">
-                                <CardHeader>
-                                    <div className="flex items-start justify-between gap-2">
-                                        <CardTitle className="leading-snug">
-                                            {step.title}
-                                        </CardTitle>
-                                        {step.setting && (
-                                            <Badge
-                                                variant={
-                                                    step.setting.on
-                                                        ? 'default'
-                                                        : 'outline'
-                                                }
-                                                className="shrink-0"
-                                                title={step.setting.name}
-                                            >
-                                                {step.setting.on ? 'On' : 'Off'}
-                                            </Badge>
-                                        )}
-                                    </div>
-                                    <CardDescription>
-                                        {step.text}
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardFooter className="mt-auto flex flex-wrap items-center gap-x-1 text-xs text-muted-foreground">
-                                    {step.setting && !step.setting.on ? (
-                                        <>
-                                            Needs{' '}
-                                            <code className="font-mono">
-                                                {step.setting.name}
-                                            </code>
-                                        </>
-                                    ) : (
-                                        <>
-                                            {step.where}
-                                            <ArrowRight className="size-3" />
-                                        </>
+                            <InsetCard className="h-full transition-[box-shadow,transform] duration-150 ease-out-quint group-active:scale-[0.99] motion-reduce:transition-none motion-reduce:group-active:scale-100">
+                                <div className="flex min-h-9 items-center justify-between gap-2 px-3 pt-1.5 pb-0.5">
+                                    <h3 className="text-sm font-medium">
+                                        {step.title}
+                                    </h3>
+                                    {step.setting && (
+                                        <Badge
+                                            variant={
+                                                step.setting.on
+                                                    ? 'success'
+                                                    : 'secondary'
+                                            }
+                                            title={step.setting.name}
+                                        >
+                                            {step.setting.on ? 'On' : 'Off'}
+                                        </Badge>
                                     )}
-                                </CardFooter>
-                            </Card>
+                                </div>
+                                <InsetCardBody className="flex flex-1 flex-col gap-4 p-4 transition-colors duration-150 group-hover:bg-card/60 group-focus-visible:bg-card/60">
+                                    <p className="text-[13px] leading-5 text-muted-foreground">
+                                        {step.text}
+                                    </p>
+                                    <p className="mt-auto flex flex-wrap items-center gap-x-1 text-xs text-muted-foreground">
+                                        {step.setting && !step.setting.on ? (
+                                            <>
+                                                Needs{' '}
+                                                <code className="rounded bg-muted px-1 font-mono text-foreground">
+                                                    {step.setting.name}
+                                                </code>
+                                            </>
+                                        ) : (
+                                            <>
+                                                {step.where}
+                                                {step.href && (
+                                                    <ArrowRight className="size-3 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transition-none" />
+                                                )}
+                                            </>
+                                        )}
+                                    </p>
+                                </InsetCardBody>
+                            </InsetCard>
                         );
 
                         const className =
-                            'group block rounded-xl focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none';
+                            'group block rounded-xl outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
 
                         if (!step.href) {
                             return (

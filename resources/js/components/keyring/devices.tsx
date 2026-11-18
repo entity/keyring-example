@@ -1,8 +1,14 @@
 import { router } from '@inertiajs/react';
 import { Laptop } from 'lucide-react';
 import { ago } from '@/components/keyring/sign-in-methods';
+import RowIcon from '@/components/keyring/row-icon';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    InsetCardDescription,
+    InsetCardList,
+    InsetCardTitle,
+} from '@/components/ui/inset-card';
 import { type Place, place } from '@/keyring/format';
 
 export type DeviceRow = {
@@ -24,19 +30,22 @@ export type DeviceRow = {
  */
 export default function Devices({ devices }: { devices: DeviceRow[] }) {
     return (
-        <div className="space-y-3">
-            <div>
-                <h3 className="text-sm font-medium">Devices</h3>
-                <p className="text-sm text-muted-foreground">
+        <div className="flex flex-col gap-1">
+            <div className="px-3 pt-2 pb-1">
+                <InsetCardTitle as="h3">Devices</InsetCardTitle>
+                <InsetCardDescription>
                     Browsers that have signed in. Signing one out ends every
                     session on it.
-                </p>
+                </InsetCardDescription>
             </div>
 
-            <ul className="divide-y rounded-lg border">
+            <InsetCardList>
                 {devices.map((device) => (
-                    <li key={device.id} className="flex items-center gap-3 p-4">
-                        <Laptop className="size-5 shrink-0 text-muted-foreground" />
+                    <li
+                        key={device.id}
+                        className="flex items-center gap-3 px-4 py-3"
+                    >
+                        <RowIcon icon={Laptop} />
                         <div className="min-w-0 flex-1">
                             <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium">
                                 <span className="truncate">
@@ -44,7 +53,7 @@ export default function Devices({ devices }: { devices: DeviceRow[] }) {
                                 </span>
                                 {device.current && <Badge>This device</Badge>}
                                 {device.trusted && (
-                                    <Badge variant="secondary">Trusted</Badge>
+                                    <Badge variant="success">Trusted</Badge>
                                 )}
                             </p>
                             <p className="text-xs text-muted-foreground">
@@ -59,7 +68,7 @@ export default function Devices({ devices }: { devices: DeviceRow[] }) {
                         </div>
                         {!device.current && (
                             <Button
-                                variant="ghost"
+                                variant="secondary"
                                 size="sm"
                                 onClick={() =>
                                     router.delete(
@@ -73,7 +82,7 @@ export default function Devices({ devices }: { devices: DeviceRow[] }) {
                         )}
                     </li>
                 ))}
-            </ul>
+            </InsetCardList>
         </div>
     );
 }
