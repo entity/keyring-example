@@ -30,11 +30,17 @@ class RiskSignalsTest extends TestCase
         $this->assertSame([Signals\SessionFingerprintChanged::class], $this->signalsAt(Checkpoint::Request));
     }
 
-    public function test_the_breach_check_is_off_unless_its_setting_is_on()
+    /**
+     * Unset keeps Keyring's default (null), which checks new passwords in
+     * production only.
+     */
+    public function test_the_breach_check_keeps_keyrings_default_unless_its_set()
     {
-        $this->assertFalse($this->keyringConfig()['passwords']['uncompromised']);
-        $this->assertFalse($this->keyringConfig(['BREACHED_PASSWORD_CHECK' => 'true'])['passwords']['refuse_unchecked']);
+        $this->assertNull($this->keyringConfig()['passwords']['uncompromised']);
+        $this->assertNull($this->keyringConfig(['BREACHED_PASSWORD_CHECK' => ''])['passwords']['uncompromised']);
         $this->assertTrue($this->keyringConfig(['BREACHED_PASSWORD_CHECK' => 'true'])['passwords']['uncompromised']);
+        $this->assertFalse($this->keyringConfig(['BREACHED_PASSWORD_CHECK' => 'false'])['passwords']['uncompromised']);
+        $this->assertFalse($this->keyringConfig(['BREACHED_PASSWORD_CHECK' => 'true'])['passwords']['refuse_unchecked']);
         $this->assertTrue($this->keyringConfig(['BREACHED_PASSWORD_REFUSE_UNCHECKED' => 'true'])['passwords']['refuse_unchecked']);
     }
 
@@ -43,6 +49,20 @@ class RiskSignalsTest extends TestCase
         $this->checkBreachedPasswords();
 
         $this->assertContains(Signals\BreachedPassword::class, $this->signalsAt(Checkpoint::Login));
+    }
+
+    /**
+     * Keyring's default only checks new passwords, and only in production,
+     * so sign ins aren't checked unless the setting says true.
+     */
+    public function test_sign_ins_are_only_checked_when_the_setting_is_true()
+    {
+        foreach ([null, false] as $setting) {
+            config(['keyring.passwords.uncompromised' => $setting]);
+            new KeyringServiceProvider($this->app)->boot();
+
+            $this->assertNotContains(Signals\BreachedPassword::class, $this->signalsAt(Checkpoint::Login));
+        }
     }
 
     /**

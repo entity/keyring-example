@@ -37,8 +37,11 @@ const alertText: Record<string, string> = {
 type DemoSettings = {
     /** Which locator KEYRING_LOCATOR picked, if any. */
     locator: 'demo' | 'cloudflare' | 'other' | null;
-    /** BREACHED_PASSWORD_CHECK. */
-    breachCheck: boolean;
+    /**
+     * Have I Been Pwned: sign ins only with BREACHED_PASSWORD_CHECK=true,
+     * new passwords then or, left unset, in production.
+     */
+    breachCheck: { signIns: boolean; newPasswords: boolean };
     /** The /emails previews, which only exist while running locally. */
     emailPreviews: boolean;
 };
@@ -101,11 +104,20 @@ function tour(settings: DemoSettings): Step[] {
         },
         {
             title: 'Use a breached password',
-            text: 'With the check on, signing in with a password from a known breach holds you on Security until you choose another (the demo accounts’ “password” is one), and a breached new password is refused. Every check asks Have I Been Pwned, so it’s off unless you turn it on.',
+            text:
+                (settings.breachCheck.signIns
+                    ? 'Signing in'
+                    : 'With BREACHED_PASSWORD_CHECK=true, signing in') +
+                ' with a password from a known breach holds you on Security until you choose another (the demo accounts’ “password” is one), and a breached new password is refused.' +
+                (settings.breachCheck.signIns
+                    ? ''
+                    : settings.breachCheck.newPasswords
+                      ? ' For now only new passwords are checked, as Keyring does in production.'
+                      : ' Every check asks Have I Been Pwned, so Keyring only checks new passwords in production unless you say otherwise.'),
             href: editSecurity(),
             where: 'Settings → Security → Change password',
             setting: {
-                on: settings.breachCheck,
+                on: settings.breachCheck.signIns,
                 name: 'BREACHED_PASSWORD_CHECK=true',
             },
         },

@@ -24,7 +24,13 @@ class DashboardController extends Controller
                     DemoLocator::class => 'demo',
                     default => 'other',
                 },
-                'breachCheck' => (bool) config('keyring.passwords.uncompromised'),
+                // Sign ins are only checked with BREACHED_PASSWORD_CHECK=true.
+                // New passwords are also checked by Keyring's default (null)
+                // in production.
+                'breachCheck' => [
+                    'signIns' => config('keyring.passwords.uncompromised') === true,
+                    'newPasswords' => config('keyring.passwords.uncompromised') ?? app()->isProduction(),
+                ],
                 // The /emails previews only exist while running locally.
                 'emailPreviews' => app()->isLocal(),
             ],

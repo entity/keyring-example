@@ -114,9 +114,11 @@ class KeyringServiceProvider extends ServiceProvider
             NewCountry::class,
             ImpossibleTravel::class,
             // Every password sign in asks Have I Been Pwned, so it's only on
-            // with BREACHED_PASSWORD_CHECK. A password it finds holds the
-            // user on the security page until they choose another.
-            ...config('keyring.passwords.uncompromised') ? [BreachedPassword::class] : [],
+            // with BREACHED_PASSWORD_CHECK=true, not with Keyring's default
+            // (null), which only checks new passwords in production. A
+            // password it finds holds the user on the security page until
+            // they choose another.
+            ...config('keyring.passwords.uncompromised') === true ? [BreachedPassword::class] : [],
         ]);
 
         // Keyring's pages already match the starter kit's names (auth/login,

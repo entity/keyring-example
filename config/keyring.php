@@ -125,14 +125,14 @@ return [
     | is the documented list OWASP ASVS 6.1.2 asks for: the names of the
     | organisation, its products and its projects.
     |
-    | Checking passwords against Have I Been Pwned is a network call, so the
-    | demo leaves it off everywhere, production included (Keyring's own
-    | default runs it in production only). BREACHED_PASSWORD_CHECK turns it
-    | on: a new password found in a breach is refused, and
-    | KeyringServiceProvider adds the BreachedPassword signal, which checks
-    | the password at every sign in and sends a user whose password it finds
-    | to choose another. Only the first five characters of the password's
-    | SHA-1 leave the server.
+    | New passwords are checked against Have I Been Pwned as Keyring does by
+    | default: in production only, so local and test runs make no network
+    | calls. BREACHED_PASSWORD_CHECK=true checks them everywhere, and
+    | KeyringServiceProvider then adds the BreachedPassword signal, which
+    | checks the password at every sign in too and sends a user whose
+    | password it finds to choose another. BREACHED_PASSWORD_CHECK=false
+    | turns the check off, production included. Only the first five
+    | characters of the password's SHA-1 leave the server.
     |
     | When the service can't be reached, a new password is let through.
     | BREACHED_PASSWORD_REFUSE_UNCHECKED refuses it instead, and asks the
@@ -142,7 +142,11 @@ return [
 
     'passwords' => [
         'context' => ['Keyring', 'Entity', 'Laravel', 'Starter Kit'],
-        'uncompromised' => (bool) env('BREACHED_PASSWORD_CHECK', false),
+        // Unset (or empty) leaves Keyring's default: null.
+        'uncompromised' => match ($check = env('BREACHED_PASSWORD_CHECK')) {
+            null, '' => null,
+            default => (bool) $check,
+        },
         'refuse_unchecked' => (bool) env('BREACHED_PASSWORD_REFUSE_UNCHECKED', false),
     ],
 

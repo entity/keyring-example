@@ -73,12 +73,15 @@ KEYRING_LOCATOR=cloudflare   # Cloudflare's CF-IPCountry (and city and coordinat
 
 ### Breached passwords
 
-Checking passwords against Have I Been Pwned is a network call, so it's off here, production included (Keyring's own default runs it in production):
+Left unset, `BREACHED_PASSWORD_CHECK` keeps Keyring's default: new passwords are checked against Have I Been Pwned in production only, so local and test runs make no network calls.
 
 ```ini
-BREACHED_PASSWORD_CHECK=true              # refuse breached new passwords, and add the BreachedPassword signal
+BREACHED_PASSWORD_CHECK=true              # check new passwords everywhere, and every password sign in (the BreachedPassword signal)
+BREACHED_PASSWORD_CHECK=false             # don't check at all, production included
 BREACHED_PASSWORD_REFUSE_UNCHECKED=true   # refuse a new password while the service can't be reached
 ```
+
+Sign ins are only checked with `true`, since that's a network call at every password sign in.
 
 Only the first five characters of the password's SHA-1 leave the server.
 
@@ -175,7 +178,7 @@ Keyring's docs have a page on what to turn on for each level of [OWASP ASVS 5.0.
 | Seeing and ending sessions, and the offer to end the others when a sign-in method changes (7.4.3, 7.5.2) | Settings → Security                                                                      |
 | Emails about changes and suspicious sign ins (6.3.5, 6.3.7)                                              | every notice registered in `KeyringServiceProvider`                                      |
 | The security log, pruned daily                                                                           | `Features::securityLog()`, and Laravel's scheduler                                       |
-| Passwords checked against breaches (6.2.12)                                                              | off here, as it's a network call: `BREACHED_PASSWORD_CHECK=true` turns it on             |
+| Passwords checked against breaches (6.2.12)                                                              | Keyring's default, in production. `BREACHED_PASSWORD_CHECK=true` checks everywhere       |
 
 `tests/Feature/KeyringConformanceTest.php` runs Keyring's own conformance suite against this setup.
 
