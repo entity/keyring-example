@@ -5,6 +5,8 @@ import { useState } from 'react';
 import DemoLocationPicker from '@/components/demo-location-picker';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
+import StatusMessage from '@/components/status-message';
+import TextDivider from '@/components/text-divider';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -44,14 +46,7 @@ export default function Login({
         <>
             <Head title="Log in" />
 
-            {status && (
-                <div
-                    role="status"
-                    className="mb-4 text-center text-sm font-medium text-green-600"
-                >
-                    {status}
-                </div>
-            )}
+            {status && <StatusMessage className="mb-6">{status}</StatusMessage>}
 
             <Form
                 {...store.form()}
@@ -60,7 +55,7 @@ export default function Login({
             >
                 {({ processing, errors }) => (
                     <>
-                        <div className="grid gap-6">
+                        <div className="grid gap-5">
                             <div className="grid gap-2">
                                 <Label htmlFor="email">Email address</Label>
                                 <Input
@@ -82,7 +77,7 @@ export default function Login({
                                     {canResetPassword && (
                                         <TextLink
                                             href={request()}
-                                            className="ml-auto text-sm"
+                                            className="ml-auto text-[13px]"
                                             tabIndex={5}
                                         >
                                             Forgot your password?
@@ -100,7 +95,7 @@ export default function Login({
                                 <InputError message={errors.password} />
                             </div>
 
-                            <div className="flex items-center space-x-3">
+                            <div className="flex items-center gap-2.5">
                                 <Checkbox
                                     id="remember"
                                     name="remember"
@@ -115,7 +110,7 @@ export default function Login({
 
                             <Button
                                 type="submit"
-                                className="mt-4 w-full"
+                                className="mt-1 w-full"
                                 tabIndex={4}
                                 disabled={processing}
                                 data-test="login-button"
@@ -126,7 +121,8 @@ export default function Login({
                         </div>
 
                         {passkey.supported && (
-                            <div className="grid gap-2">
+                            <div className="grid gap-4">
+                                <TextDivider>or</TextDivider>
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -159,7 +155,7 @@ export default function Login({
                 )}
             </Form>
 
-            <p className="mt-6 text-center text-sm text-muted-foreground">
+            <p className="mt-6 border-t pt-5 text-center text-[13px] text-muted-foreground">
                 Trying the demo? The accounts are on the{' '}
                 <TextLink href={home()}>home page</TextLink>.
             </p>

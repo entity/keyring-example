@@ -1,5 +1,6 @@
 import type { Challenge, FactorComponent } from '@entity/keyring/react';
 import { useEffect, useRef } from 'react';
+import CodeInput from '@/components/code-input';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
@@ -9,16 +10,19 @@ import { Spinner } from '@/components/ui/spinner';
 
 function SubmitButton({
     challenge,
+    disabled = false,
     children,
 }: {
     challenge: Challenge;
+    /** Until the answer is complete. */
+    disabled?: boolean;
     children: React.ReactNode;
 }) {
     return (
         <Button
             type="submit"
             className="w-full"
-            disabled={challenge.form.processing}
+            disabled={disabled || challenge.form.processing}
         >
             {challenge.form.processing && <Spinner />}
             {children}
@@ -54,41 +58,22 @@ function Password({ challenge }: { challenge: Challenge }) {
     );
 }
 
-const codeCopy: Record<
-    string,
-    (challenge: Challenge) => { label: string; hint?: string; numeric: boolean }
-> = {
-    totp: (challenge) => ({
-        label: 'Code from your authenticator app',
-        hint: challenge.props.authenticator.name,
-        numeric: true,
-    }),
-    'email-code': (challenge) => ({
-        label: 'Code from your email',
-        hint: `Sent to ${challenge.props.authenticator.hint}`,
-        numeric: true,
-    }),
-    recovery: (challenge) => ({
-        label: 'Recovery code',
-        hint: `One of the codes you saved, dashes or not. ${challenge.props.authenticator.remaining ?? 0} left.`,
-        numeric: false,
-    }),
-};
+/** How many digits a numeric code has: Keyring says for emailed ones. */
+export function codeLength(challenge: Challenge): number {
+    return challenge.props.factor === 'email-code'
+        ? Number(challenge.props.challenge.length ?? 8)
+        : 6;
+}
 
 function Code({ challenge }: { challenge: Challenge }) {
-    const { props } = challenge;
-    const copy = codeCopy[props.factor]?.(challenge) ?? {
-        label: 'Code',
-        numeric: false,
-    };
+    const { props, form } = challenge;
     const sendsCodes = props.factor === 'email-code';
 
     if (sendsCodes && !props.challenge.sent) {
         return (
             <div className="grid gap-4 text-center">
-                <p className="text-sm text-muted-foreground">
-                    We'll email a code to {props.authenticator.hint}. It's an
-                    extra step after your password, not a second factor.
+                <p className="text-[13px] text-muted-foreground">
+                    It's an extra step after your password, not a second factor.
                 </p>
                 <Button className="w-full" onClick={() => challenge.send()}>
                     Send code
@@ -97,51 +82,105 @@ function Code({ challenge }: { challenge: Challenge }) {
         );
     }
 
+    if (props.factor === 'recovery') {
+        return (
+            <form
+                className="grid gap-6"
+                onSubmit={(event) => {
+                    event.preventDefault();
+                    challenge.submit();
+                }}
+            >
+                <div className="grid gap-2">
+                    <Label htmlFor="code">Recovery code</Label>
+                    <Input
+                        id="code"
+                        className="font-mono tracking-wider"
+                        autoComplete="one-time-code"
+                        autoCapitalize="none"
+                        spellCheck={false}
+                        autoFocus
+                        required
+                        aria-invalid={form.errors.code ? true : undefined}
+                        aria-describedby="code-hint"
+                        value={form.data.code}
+                        onChange={(event) =>
+                            form.setData('code', event.target.value)
+                        }
+                    />
+                    <p id="code-hint" className="text-xs text-muted-foreground">
+                        Dashes or not. {props.authenticator.remaining ?? 0}{' '}
+                        left.
+                    </p>
+                    <InputError message={form.errors.code} />
+                </div>
+                <SubmitButton challenge={challenge}>Verify</SubmitButton>
+            </form>
+        );
+    }
+
+    const length = codeLength(challenge);
+    const complete = form.data.code.length === length;
+
     return (
         <form
             className="grid gap-6"
             onSubmit={(event) => {
                 event.preventDefault();
-                challenge.submit();
+
+                if (complete) {
+                    challenge.submit();
+                }
             }}
         >
-            <div className="grid gap-2">
-                <Label htmlFor="code">{copy.label}</Label>
-                {copy.hint && (
-                    <p className="-mt-1 text-xs text-muted-foreground">
-                        {copy.hint}
-                    </p>
-                )}
-                <Input
+            <div className="grid gap-3">
+                {/* The heading above says where the code comes from, so
+                    the label is for screen readers (and tests) only. */}
+                <Label htmlFor="code" className="sr-only">
+                    {sendsCodes
+                        ? 'Code from your email'
+                        : 'Code from your authenticator app'}
+                </Label>
+                <CodeInput
                     id="code"
-                    className="font-mono tracking-widest"
-                    inputMode={copy.numeric ? 'numeric' : 'text'}
-                    autoComplete="one-time-code"
-                    autoFocus
-                    required
-                    value={challenge.form.data.code}
-                    onChange={(event) =>
-                        challenge.form.setData('code', event.target.value)
+                    length={length}
+                    value={form.data.code}
+                    onChange={(code) => form.setData('code', code)}
+                    invalid={Boolean(form.errors.code)}
+                    aria-describedby={
+                        form.errors.code ? 'code-error' : undefined
                     }
+                    autoFocus
                 />
-                <InputError message={challenge.form.errors.code} />
+                <InputError
+                    id="code-error"
+                    className="text-center"
+                    message={form.errors.code}
+                />
             </div>
-            <SubmitButton challenge={challenge}>Verify</SubmitButton>
+
             {sendsCodes && (
-                <Button
-                    type="button"
-                    variant="link"
-                    onClick={() => challenge.send()}
-                >
-                    Send a new code
-                </Button>
+                <p className="text-center text-[13px] text-muted-foreground">
+                    Didn't get it?{' '}
+                    <button
+                        type="button"
+                        className="font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:underline dark:text-accent-200"
+                        onClick={() => challenge.send()}
+                    >
+                        Send a new code
+                    </button>
+                </p>
             )}
+
+            <SubmitButton challenge={challenge} disabled={!complete}>
+                Verify
+            </SubmitButton>
         </form>
     );
 }
 
 function SecurityKey({ challenge }: { challenge: Challenge }) {
-    const { props, verifyKey } = challenge;
+    const { verifyKey } = challenge;
 
     const asked = useRef(false);
 
@@ -155,11 +194,6 @@ function SecurityKey({ challenge }: { challenge: Challenge }) {
 
     return (
         <div className="grid gap-4 text-center">
-            <p className="text-sm text-muted-foreground">
-                {props.factor === 'passkey'
-                    ? 'Use your passkey to continue.'
-                    : `Insert and tap your security key (${props.authenticator.name}).`}
-            </p>
             <InputError message={challenge.form.errors.credential} />
             <Button
                 className="w-full"
