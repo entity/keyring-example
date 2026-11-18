@@ -4,15 +4,24 @@ namespace Tests\Feature\Emails;
 
 use App\Models\User;
 use App\Notifications\Keyring\AlreadyRegistered;
+use App\Notifications\Keyring\ConfirmEmailChange;
 use App\Notifications\Keyring\EmailChangeNotice;
 use App\Notifications\Keyring\VerificationCode;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\File;
 use Keyring\Facades\Keyring;
 use Keyring\KeyringManager;
 use Keyring\Notifications\AccountLocked;
 use Keyring\Notifications\AuthenticatorAdded;
+use Keyring\Notifications\CloneSuspected;
 use Keyring\Notifications\NewDevice;
+use Keyring\Notifications\PasswordChanged;
+use Keyring\Notifications\RecoveryCodeUsed;
+use Keyring\Notifications\SecondFactorFailed;
+use Keyring\Notifications\SecurityNotice;
+use Keyring\Notifications\SuspiciousActivity;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -43,10 +52,32 @@ class KeyringEmailsTest extends TestCase
 
         $mail = $this->render($notification->toMail(new User));
 
+        $this->assertWellFormed($mail);
+
+        if ($notification instanceof SecurityNotice) {
+            $data = $notification->toMail(new User)->viewData;
+
+            $this->assertFileExists(public_path("images/emails/{$data['icon']}-{$data['tone']}.png"), "{$type} shows an icon that hasn't been drawn: run `npm run emails:images`.");
+        }
+    }
+
+    /**
+     * What every email has: the HTML with the logo and app name, and a plain
+     * text part with no markup and one blank line between paragraphs.
+     *
+     * @param  array{html: string, text: string}  $mail
+     */
+    protected function assertWellFormed(array $mail): void
+    {
         $this->assertStringContainsString('<!DOCTYPE html>', $mail['html']);
         $this->assertStringContainsString(config('app.name'), $mail['html']);
-        $this->assertNotEmpty($mail['text']);
+        $this->assertStringContainsString(asset('images/emails/logo.png'), $mail['html']);
         $this->assertStringNotContainsString('{{', $mail['html'].$mail['text']);
+        $this->assertStringNotContainsString('@if', $mail['html'].$mail['text']);
+
+        $this->assertStringStartsWith(config('app.name')."\n\n", $mail['text']);
+        $this->assertDoesNotMatchRegularExpression('/<[a-z][^>]*>/i', $mail['text']);
+        $this->assertDoesNotMatchRegularExpression('/\n\s*\n\s*\n/', $mail['text']);
     }
 
     /**
@@ -133,6 +164,95 @@ class KeyringEmailsTest extends TestCase
         $notification = Keyring::requiredNotification('password_changed', ['when' => 'now']);
 
         $this->assertStringContainsString('href="mailto:help@example.com"', $this->render($notification->toMail(new User))['html']);
+    }
+
+    public function test_alerts_and_confirmations_each_have_their_own_tone()
+    {
+        $tone = fn (SecurityNotice $notice) => $notice->toMail(new User)->viewData['tone'];
+
+        $this->assertSame('critical', $tone(new SecondFactorFailed(when: 'now')));
+        $this->assertSame('critical', $tone(new AccountLocked(when: 'now')));
+        $this->assertSame('warning', $tone(new NewDevice(when: 'now')));
+        $this->assertSame('success', $tone(new PasswordChanged(when: 'now')));
+
+        $html = $this->render((new SecondFactorFailed(when: 'now'))->toMail(new User))['html'];
+
+        $this->assertStringContainsString('Security alert', $html);
+        $this->assertStringContainsString('shield-alert-critical.png', $html);
+    }
+
+    public function test_unusual_activity_lists_what_was_noticed()
+    {
+        $mail = $this->render((new SuspiciousActivity(when: 'now', reasons: 'Signing in from a new country (NL). 5 failed second factors in the last 1h.'))->toMail(new User));
+
+        $this->assertStringContainsString('What we noticed', $mail['html']);
+        $this->assertStringContainsString("- Signing in from a new country (NL).\n- 5 failed second factors in the last 1h.", $mail['text']);
+    }
+
+    public function test_a_used_recovery_code_says_how_many_are_left_and_when_to_make_more()
+    {
+        $plenty = $this->render((new RecoveryCodeUsed(when: 'now', remaining: 7))->toMail(new User));
+        $few = $this->render((new RecoveryCodeUsed(when: 'now', remaining: 1))->toMail(new User));
+
+        $this->assertStringContainsString('Codes left: 7', $plenty['text']);
+        $this->assertStringNotContainsString('running low', $plenty['text']);
+        $this->assertStringContainsString('running low', $few['text']);
+    }
+
+    public function test_a_security_key_alert_names_the_key()
+    {
+        $mail = $this->render((new CloneSuspected(when: 'now', name: 'YubiKey <5C>'))->toMail(new User));
+
+        $this->assertStringContainsString('YubiKey &lt;5C&gt;', $mail['html']);
+        $this->assertStringContainsString('Security key: YubiKey <5C>', $mail['text']);
+    }
+
+    public function test_the_details_show_when_and_where_without_empty_rows()
+    {
+        $mail = $this->render((new PasswordChanged(when: 'Monday', ip: '203.0.113.7'))->toMail(new User));
+
+        $this->assertStringContainsString("When: Monday\nIP address: 203.0.113.7", $mail['text']);
+        $this->assertStringNotContainsString('Device:', $mail['text']);
+    }
+
+    public function test_a_link_email_has_a_button_and_the_link_in_full()
+    {
+        $mail = $this->render((new ConfirmEmailChange('https://example.com/confirm?signature=abc', now()->addDay()))->toMail(new User));
+
+        $this->assertSame(2, substr_count($mail['html'], 'href="https://example.com/confirm?signature=abc"'));
+        $this->assertStringContainsString("Confirm email address:\nhttps://example.com/confirm?signature=abc", $mail['text']);
+    }
+
+    public function test_the_verification_email_uses_the_apps_template()
+    {
+        $user = (new User)->forceFill(['id' => 5, 'email' => 'nora@example.com']);
+
+        $mail = (new VerifyEmail)->toMail($user);
+        $rendered = $this->render($mail);
+
+        $this->assertSame('Verify your email address', $mail->subject);
+        $this->assertWellFormed($rendered);
+        $this->assertMatchesRegularExpression('#href="'.preg_quote(url('/email/verify/'.$user->id), '#').'/[0-9a-f]+\?expires=\d+&amp;signature=[0-9a-f]+"#', $rendered['html']);
+        $this->assertStringContainsString('This link expires in 60 minutes.', $rendered['text']);
+    }
+
+    public function test_the_password_reset_email_uses_the_apps_template()
+    {
+        $user = (new User)->forceFill(['id' => 5, 'email' => 'nora@example.com']);
+
+        $mail = (new ResetPassword('a-token'))->toMail($user);
+        $rendered = $this->render($mail);
+
+        $this->assertSame('Reset your password', $mail->subject);
+        $this->assertWellFormed($rendered);
+        $this->assertStringContainsString('href="'.e(route('password.reset', ['token' => 'a-token', 'email' => 'nora@example.com'])).'"', $rendered['html']);
+        $this->assertStringContainsString(route('password.reset', ['token' => 'a-token', 'email' => 'nora@example.com']), $rendered['text']);
+    }
+
+    public function test_the_email_gallery_is_only_there_while_developing()
+    {
+        $this->get('/emails')->assertNotFound();
+        $this->get('/emails/new_device')->assertNotFound();
     }
 
     public function test_the_built_views_are_up_to_date_with_their_templates()

@@ -1,33 +1,34 @@
 <!-- Sent to the new address during an email change: confirm it's yours. -->
 <template>
     <Shell preheader="Confirm this is your new email address.">
+        <template #top><Accent tone="info" /></template>
         <template #footer>
             You're getting this email because someone asked to use this address
             for their account.
         </template>
 
-        <Heading
-            class="m-0 text-2xl/8 font-semibold text-slate-900 dark:text-white"
-        >
-            Confirm your new email address
-        </Heading>
+        <NotPlaintext>
+            <Hero tone="info" icon="mail-check" eyebrow="Confirm your email">
+                Confirm your new email address
+            </Hero>
+        </NotPlaintext>
+        <Plaintext>Confirm your new email address</Plaintext>
 
-        <Text class="m-0 mt-4 text-base/7 text-slate-600 dark:text-slate-300">
-            Please confirm this is the new email address for your account.
-        </Text>
-
-        <Spacer class="h-8" />
-        <Button
-            href="{{ $url }}"
-            class="rounded-lg bg-slate-900 text-sm font-semibold text-white dark:bg-white dark:text-slate-900"
-        >
-            Confirm email address
-        </Button>
+        <Lead>
+            Someone asked to use this address for their account. If that was
+            you, confirm it to finish the change.
+        </Lead>
 
         <Spacer class="h-8" />
-        <Text class="m-0 text-sm/6 text-slate-500 dark:text-slate-400">
-            This link expires <Raw>{{ $expires }}</Raw
-            >. If you didn't ask for this, you can ignore this email.
-        </Text>
+        <Action href="{{ $url }}" fallback>Confirm email address</Action>
+
+        <Note>This link expires <Raw>{{ $expires }}</Raw>.</Note>
+
+        <Callout title="Didn't ask for this?">
+            <Text class="m-0 text-sm/6">
+                You can ignore this email. Nothing changes unless the link is
+                used.
+            </Text>
+        </Callout>
     </Shell>
 </template>

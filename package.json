@@ -12,7 +12,8 @@
         "emails": "maizzle build",
         "emails:dev": "maizzle serve",
         "test:browser": "playwright test",
-        "test:browser:octane": "E2E_SERVER=octane playwright test"
+        "test:browser:octane": "E2E_SERVER=octane playwright test",
+        "emails:images": "node resources/emails/images.mjs"
     },
     "dependencies": {
         "@inertiajs/react": "^3.0.0",

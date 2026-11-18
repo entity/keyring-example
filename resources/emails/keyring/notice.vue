@@ -1,55 +1,59 @@
 <!--
   Every security notice: "your password was changed", "new sign-in" and the
-  rest. KeyringServiceProvider::noticeMail() passes the subject, intro,
-  detail lines and, for some, a button.
+  rest. App\Notifications\Keyring\NoticeMail gives each its tone, icon,
+  label, details and advice, so one template covers all twelve.
 -->
 <template>
     <Shell>
-        <Heading
-            class="m-0 text-2xl/8 font-semibold text-slate-900 dark:text-white"
-        >
-            <Raw>{{ $subject }}</Raw>
-        </Heading>
+        <template #preheader>
+            <Preheader><Raw>{{ $preheader }}</Raw></Preheader>
+        </template>
 
-        <Text class="m-0 mt-4 text-base/7 text-slate-600 dark:text-slate-300">
-            <Raw>{{ $intro }}</Raw>
-        </Text>
+        <template #top>
+            <ToneSwitch v-slot="{ tone }">
+                <Accent :tone="tone" />
+            </ToneSwitch>
+        </template>
 
-        <Raw>@if ($details !== [])</Raw>
-        <Spacer class="h-6" />
-        <table class="w-full rounded-lg bg-slate-50 dark:bg-slate-800">
-            <Raw>@foreach ($details as $detail)</Raw>
-            <tr>
-                <td
-                    class="w-28 px-4 py-2 align-top text-sm text-slate-500 dark:text-slate-400"
-                >
-                    <Raw>{{ $detail['label'] }}</Raw>
-                </td>
-                <td
-                    class="px-4 py-2 text-sm font-medium text-slate-900 dark:text-white"
-                >
-                    <Raw>{{ $detail['value'] }}</Raw>
-                </td>
-            </tr>
+        <NotPlaintext>
+            <ToneSwitch v-slot="{ tone }">
+                <Hero :tone="tone" icon="{{ $icon }}">
+                    <template #eyebrow><Raw>{{ $eyebrow }}</Raw></template>
+                    <Raw>{{ $subject }}</Raw>
+                </Hero>
+            </ToneSwitch>
+        </NotPlaintext>
+        <Plaintext><Raw>{{ $subject }}</Raw></Plaintext>
+
+        <Lead><Raw>{{ $intro }}</Raw></Lead>
+
+        <Raw>@if ($reasons !== [])</Raw>
+        <Callout tone="warning" title="What we noticed">
+            <Raw>@foreach ($reasons as $reason)</Raw>
+            <NotPlaintext>
+                <Text class="m-0 mt-1 text-sm/6">
+                    &bull;&nbsp; <Raw>{{ $reason }}</Raw>
+                </Text>
+            </NotPlaintext>
+            <Plaintext>- <Raw>{{ $reason }}</Raw></Plaintext>
             <Raw>@endforeach</Raw>
-        </table>
+        </Callout>
         <Raw>@endif</Raw>
+
+        <Details />
 
         <Raw>@isset($actionUrl)</Raw>
         <Spacer class="h-8" />
-        <Button
-            href="{{ $actionUrl }}"
-            class="rounded-lg bg-slate-900 text-sm font-semibold text-white dark:bg-white dark:text-slate-900"
-        >
+        <Action href="{{ $actionUrl }}" fallback>
             <Raw>{{ $actionText }}</Raw>
-        </Button>
+        </Action>
         <Raw>@endisset</Raw>
 
-        <Spacer class="h-8" />
-        <Text class="m-0 text-sm/6 text-slate-500 dark:text-slate-400">
-            If this wasn't you, change your password and check your sign-in
-            methods straight away.
-        </Text>
-        <Contact />
+        <Callout>
+            <template #title><Raw>{{ $adviceTitle }}</Raw></template>
+            <Text class="m-0 text-sm/6">
+                <Raw>{{ $advice }}</Raw>
+            </Text>
+        </Callout>
     </Shell>
 </template>

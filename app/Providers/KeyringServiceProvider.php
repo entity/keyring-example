@@ -9,10 +9,10 @@ use App\Actions\Keyring\ResetUserPassword;
 use App\Actions\Keyring\UpdateUserPassword;
 use App\Actions\Keyring\ValidateEmailChange;
 use App\Notifications\Keyring as Notifications;
-use App\Support\SupportContact;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Http\Kernel;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\ServiceProvider;
 use Keyring\Facades\Keyring;
 use Keyring\Factors\EmailCode;
@@ -70,8 +70,14 @@ class KeyringServiceProvider extends ServiceProvider
 
         // Keyring sends its own security notices. This app only gives them
         // its look: every one is built from one Maizzle template,
-        // resources/emails/keyring/notice.vue.
-        SecurityNotice::toMailUsing(self::noticeMail(...));
+        // resources/emails/keyring/notice.vue, with a tone, icon and
+        // details per notice from NoticeMail.
+        SecurityNotice::toMailUsing(Notifications\NoticeMail::build(...));
+
+        // Laravel's own verification and password reset emails, which
+        // Keyring sends during registration and resets, in the same look.
+        VerifyEmail::toMailUsing(Notifications\LaravelMail::verifyEmail(...));
+        ResetPassword::toMailUsing(Notifications\LaravelMail::resetPassword(...));
 
         // The five emails a flow needs each have a shape of their own, so
         // they're this app's classes, in app/Notifications/Keyring, with a
@@ -116,25 +122,6 @@ class KeyringServiceProvider extends ServiceProvider
         // Keyring's pages already match the starter kit's names (auth/login,
         // auth/challenge...). Step-up confirmation reuses the challenge page.
         Keyring::page('confirm', 'auth/challenge');
-    }
-
-    /**
-     * The email of every security notice, from the one Maizzle template
-     * `npm run emails` builds into these two views. Blade escapes what the
-     * HTML one prints, so a name someone typed can't add markup to it.
-     */
-    protected static function noticeMail(SecurityNotice $notice, object $notifiable): MailMessage
-    {
-        $details = array_filter([__('When') => $notice->when, __('Device') => $notice->device, __('IP address') => $notice->ip]);
-
-        return (new MailMessage)->subject($notice->subject())->view(['html' => 'emails.keyring.notice', 'text' => 'emails.keyring.text.notice'], [
-            'subject' => $notice->subject(),
-            'intro' => $notice->intro(),
-            'details' => array_map(fn (string $label, string $value) => ['label' => $label, 'value' => $value], array_keys($details), $details),
-            'actionText' => $notice->action(),
-            'actionUrl' => $notice->action() === null ? null : $notice->url,
-            ...SupportContact::for($notice->contact),
-        ]);
     }
 
     /**
