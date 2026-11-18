@@ -7,8 +7,11 @@ use App\Providers\KeyringServiceProvider;
 use Illuminate\Contracts\Validation\UncompromisedVerifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Keyring\Facades\Keyring;
+use Keyring\Models\PendingChange;
+use Keyring\Models\SecurityEvent;
 use Keyring\Risk\Checkpoint;
 use Keyring\Risk\Signals;
+use ReflectionProperty;
 use Tests\TestCase;
 
 class RiskSignalsTest extends TestCase
@@ -66,6 +69,54 @@ class RiskSignalsTest extends TestCase
     }
 
     /**
+     * The scores add up, and 90 refuses the sign in. Whatever is true of
+     * the owner's own sign in (a new device, in a new country, after 90
+     * quiet days or a week after changing the address), a stranger typing
+     * wrong passwords mustn't be able to take it to 90. The address can't
+     * have changed during the quiet days, so only the larger of the two
+     * counts. Impossible travel and a new country together still refuse.
+     */
+    public function test_a_stranger_cant_add_enough_to_refuse_the_owner()
+    {
+        $score = $this->scores();
+
+        $owner = $score[Signals\NewDevice::class]
+            + $score[Signals\NewCountry::class]
+            + max($score[Signals\InactiveAccount::class], $score[Signals\RecentlyChangedRecovery::class]);
+
+        $this->assertLessThan(90, $owner + $score[Signals\SuccessAfterFailures::class]);
+        $this->assertGreaterThanOrEqual(90, $score[Signals\NewCountry::class] + $score[Signals\ImpossibleTravel::class]);
+    }
+
+    /**
+     * In the week after the address changed, a sign in from a new browser
+     * (15) with the change (25) is asked for more, and the activity says
+     * why.
+     */
+    public function test_a_sign_in_after_an_email_change_counts_the_change()
+    {
+        $user = User::factory()->create(['email' => 'new@example.com']);
+        $change = new PendingChange([
+            'attribute' => 'email',
+            'value' => 'new@example.com',
+            'previous_value' => 'old@example.com',
+            'confirm_token' => PendingChange::hashToken('confirm'),
+            'revert_token' => PendingChange::hashToken('revert'),
+            'expires_at' => now()->subDays(2),
+            'applied_at' => now()->subDays(3),
+            'revertable_until' => now()->addDays(4),
+        ]);
+        $change->authenticatable()->associate($user)->save();
+
+        $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password']);
+
+        $this->assertAuthenticatedAs($user);
+        $assessed = SecurityEvent::query()->where('type', 'risk_step_up')->sole();
+        $this->assertSame(40, $assessed->meta['score']);
+        $this->assertContains('The email address changed recently.', $assessed->meta['reasons']);
+    }
+
+    /**
      * The sign in goes ahead, and the user is held on the security page
      * (keyring.password_change_url) until they've chosen another password.
      */
@@ -86,6 +137,22 @@ class RiskSignalsTest extends TestCase
         $this->assertAuthenticatedAs($user);
         $this->assertTrue(Keyring::requiresPasswordChange($user));
         $this->get(route('dashboard'))->assertRedirect('/settings/security');
+    }
+
+    /**
+     * Each login signal's score, as the app registers it.
+     *
+     * @return array<class-string, int>
+     */
+    private function scores(): array
+    {
+        $scores = [];
+
+        foreach (Keyring::risk()->signalsFor(Checkpoint::Login) as $signal) {
+            $scores[$signal::class] = (new ReflectionProperty($signal, 'score'))->getValue($signal);
+        }
+
+        return $scores;
     }
 
     /**

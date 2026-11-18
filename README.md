@@ -56,7 +56,9 @@ Emails (codes, email change links, security notices) go to `storage/logs/laravel
 | `NewCountry`, `ImpossibleTravel`                                                                              | always on, and quiet until there's a [locator](#locations)                                                    |
 | `BreachedPassword`                                                                                            | with `BREACHED_PASSWORD_CHECK=true`, since it calls Have I Been Pwned at every password sign in               |
 
-A new country and impossible travel together score 90, which refuses the sign in.
+The scores add up, and 90 refuses the sign in, so they're kept to sums where a stranger can't get the real owner refused. The most the owner's own sign in can score is a new device (15) in a new country (30) after 90 quiet days (30): 75. A changed email address (25) can't come on top of the quiet days, since changing it takes a signed-in session. Anyone who knows the address can add failed attempts on top, so `SuccessAfterFailures` scores 10 here instead of Keyring's 30, which would take that sign in to 105. With 10 it's 85, which asks for a second factor and emails the owner. Every enrolled user gives a second factor at every sign in here anyway, so the lower score gives nothing up. `RepeatedFactorFailures` only counts failures after the right password, so it isn't a stranger's to raise. `tests/Feature/RiskSignalsTest.php` checks these sums.
+
+A new country (30) and impossible travel (60) together score 90, so a sign in from Tokyo a minute after London is refused.
 
 ### Locations
 

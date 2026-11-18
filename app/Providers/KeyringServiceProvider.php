@@ -93,16 +93,31 @@ class KeyringServiceProvider extends ServiceProvider
         ]);
 
         // What makes a sign in or a session look wrong. Keyring's own
-        // response does the rest: a second factor at medium, an email to the
-        // owner from high, and a refused sign in at critical. A sign in
-        // after a long quiet period, or after several failed attempts,
-        // emails the owner whatever it scores.
+        // response does the rest: a second factor at 30 (medium), an email
+        // to the owner from 60 (high), and a refused sign in at 90
+        // (critical). A sign in after a long quiet period, or after several
+        // failed attempts, emails the owner whatever it scores.
+        //
+        // The scores add up, so they're picked so that a stranger can't get
+        // the real owner refused. The most the owner's own sign in can score
+        // is a new device (15) in a new country (30) after 90 quiet days
+        // (30), which is 75. The address changing this week (25) can't come
+        // on top of the quiet days, since changing it takes a signed-in
+        // session. Anyone who knows the email address can then add failed
+        // attempts, so SuccessAfterFailures is cut from 30 to 10: 85, short
+        // of 90. At 30 it would take that sign in to 105, and be refused.
+        // RepeatedFactorFailures takes the password to raise, so it isn't
+        // a stranger's to add. tests/Feature/RiskSignalsTest.php checks the
+        // sums: check them again when changing a score or adding a signal.
         Keyring::risk()->signals([
             NewDevice::class,
             RepeatedFactorFailures::class,
             SessionFingerprintChanged::class,
             InactiveAccount::class,
-            SuccessAfterFailures::class,
+            // Every enrolled user is asked for a second factor at every
+            // sign in here anyway, so the score this gives up only mattered
+            // for asking. The owner is still emailed about the failures.
+            $this->app->make(SuccessAfterFailures::class, ['score' => 10]),
             // Email changes are on, and an address that changed this week
             // shouldn't be trusted on its own.
             RecentlyChangedRecovery::class,
