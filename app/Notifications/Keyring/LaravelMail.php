@@ -13,6 +13,9 @@ use Illuminate\Notifications\Messages\MailMessage;
  * sends during registration and password resets, built from this app's
  * Maizzle templates so they match the rest. KeyringServiceProvider hands
  * these to VerifyEmail::toMailUsing() and ResetPassword::toMailUsing().
+ *
+ * Each keeps its link as the message's action too, as Laravel's own email
+ * does, for code that reads it from there (the registration tests do).
  */
 final class LaravelMail
 {
@@ -22,7 +25,7 @@ final class LaravelMail
      */
     public static function verifyEmail(object $notifiable, string $url): MailMessage
     {
-        return (new MailMessage)->subject(__('Verify your email address'))->view(['html' => 'emails.keyring.verify-email', 'text' => 'emails.keyring.text.verify-email'], [
+        return (new MailMessage)->subject(__('Verify your email address'))->action(__('Verify email address'), $url)->view(['html' => 'emails.keyring.verify-email', 'text' => 'emails.keyring.text.verify-email'], [
             'url' => $url,
             'minutes' => (int) config('auth.verification.expire', 60),
         ]);
@@ -38,7 +41,7 @@ final class LaravelMail
             ? (ResetPassword::$createUrlCallback)($notifiable, $token)
             : url(route('password.reset', ['token' => $token, 'email' => $notifiable->getEmailForPasswordReset()], false));
 
-        return (new MailMessage)->subject(__('Reset your password'))->view(['html' => 'emails.keyring.reset-password', 'text' => 'emails.keyring.text.reset-password'], [
+        return (new MailMessage)->subject(__('Reset your password'))->action(__('Reset password'), $url)->view(['html' => 'emails.keyring.reset-password', 'text' => 'emails.keyring.text.reset-password'], [
             'url' => $url,
             'minutes' => (int) config('auth.passwords.'.config('auth.defaults.passwords').'.expire', 60),
         ]);
