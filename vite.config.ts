@@ -35,7 +35,7 @@ export default defineConfig({
         }),
     ]),
     resolve: {
-        alias: { '@entity/keyring': keyring },
+        alias: { '@keyringjs/keyring': keyring },
         dedupe: ['react', 'react-dom', '@inertiajs/react', '@inertiajs/core'],
     },
     server: {

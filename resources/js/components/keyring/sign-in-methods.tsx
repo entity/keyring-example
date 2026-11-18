@@ -1,4 +1,4 @@
-import type { Authenticator } from '@entity/keyring/react';
+import type { Authenticator } from '@keyringjs/keyring/react';
 import {
     beginEnrollment,
     confirmEnrollment,
@@ -8,7 +8,7 @@ import {
     removeAuthenticator,
     renameAuthenticator,
     supportsWebAuthn,
-} from '@entity/keyring/react';
+} from '@keyringjs/keyring/react';
 import { router } from '@inertiajs/react';
 import {
     Fingerprint,

@@ -109,8 +109,8 @@
         "skipLibCheck": true /* Skip type checking all .d.ts files. */,
         "paths": {
             "@/*": ["./resources/js/*"],
-            "@entity/keyring": ["../keyring/js/src/index.ts"],
-            "@entity/keyring/react": ["../keyring/js/src/react.ts"]
+            "@keyringjs/keyring": ["../keyring/js/src/index.ts"],
+            "@keyringjs/keyring/react": ["../keyring/js/src/react.ts"]
         },
         "jsx": "react-jsx"
     },

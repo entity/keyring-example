@@ -22,11 +22,11 @@ Keyring isn't published yet, so this app installs it from a checkout next to thi
 
 ```
 projects/
-├── keyring/           # entity/keyring
+├── keyring/           # keyring/keyring
 └── keyring-example/   # this app
 ```
 
-Composer symlinks `../keyring`, and Vite and TypeScript read `@entity/keyring` from `../keyring/js/src`. Changes to Keyring show up here straight away.
+Composer symlinks `../keyring`, and Vite and TypeScript read `@keyringjs/keyring` from `../keyring/js/src`. Changes to Keyring show up here straight away.
 
 ```bash
 composer install
@@ -161,7 +161,7 @@ Each link signs the browser out first, then signs in or starts the sign in as on
 
 ## What changed from the starter kit
 
-- `laravel/fortify` and `laravel/chisel` removed. `entity/keyring` added, with its migrations published.
+- `laravel/fortify` and `laravel/chisel` removed. `keyring/keyring` added, with its migrations published.
 - `App\Models\User` uses `HasKeyring`. Email and password can only change through Keyring's flows.
 - `App\Providers\KeyringServiceProvider` turns on every factor, a two-factor policy once someone has a second factor, the `keyring.enrolled` middleware that makes everyone add one, every security email and every risk signal (the breached password one behind a setting).
 - `config/keyring.php` has the features, the page people are sent to for a second factor or a new password (both `/settings/security`), the list of words a password mustn't be made up of, the breached password check and the locator, both picked from `.env`.
@@ -169,7 +169,7 @@ Each link signs the browser out first, then signs in or starts the sign in as on
 - The kit's page names already match Keyring's (`auth/login`, `auth/challenge`…), so only step-up confirmation is remapped, to the challenge page.
 - New pages: `auth/challenge` (second step and step-up), and the pages emailed links open, each with one button that posts the link's token or signature in the body: `auth/email-change`, `auth/device-report` and `auth/email-verification`. Login gained passkey sign-in, and shows Keyring's message for whatever sent you there.
 - A welcome page about the demo instead of Laravel's, a key for a logo, and sidebar links to this repository and Keyring's docs.
-- Settings → Security lists sign-in methods (the password form opens from the password's row), where you're signed in (devices and sessions, with one "Sign out everywhere else"), and recent activity. It talks to Keyring's JSON routes through `@entity/keyring` (`resources/js/keyring/actions.ts` handles the 423 step-up answer and shows Keyring's own messages).
+- Settings → Security lists sign-in methods (the password form opens from the password's row), where you're signed in (devices and sessions, with one "Sign out everywhere else"), and recent activity. It talks to Keyring's JSON routes through `@keyringjs/keyring` (`resources/js/keyring/actions.ts` handles the 423 step-up answer and shows Keyring's own messages).
 - `HandleInertiaRequests` shares the flashed `status` and its message from `Keyring::statusMessage()`.
 - Settings → Profile changes the name directly and the email through Keyring's confirmed flow.
 - The kit's Fortify tests were rewritten against Keyring (`php artisan test`).

@@ -2,7 +2,7 @@ import {
     useChallenge,
     type Challenge as ChallengeState,
     type ChallengeProps,
-} from '@entity/keyring/react';
+} from '@keyringjs/keyring/react';
 import { Head } from '@inertiajs/react';
 import {
     ChevronRight,
