@@ -18,15 +18,7 @@ What you can try:
 
 ## Setup
 
-Keyring isn't published yet, so this app installs it from a checkout next to this one:
-
-```
-projects/
-├── keyring/           # keyring/keyring
-└── keyring-example/   # this app
-```
-
-Composer symlinks `../keyring`, and Vite and TypeScript read `@keyringjs/keyring` from `../keyring/js/src`. Changes to Keyring show up here straight away.
+Keyring comes from Packagist (`keyring/keyring`) and its browser package from npm (`@keyringjs/keyring`), like in any other app.
 
 ```bash
 composer install
@@ -231,4 +223,15 @@ Chrome's virtual authenticator attests with a certificate it signs itself and ma
 
 `KEYRING_REVEAL_TAKEN=true` is one more setting only the browser tests use. It turns on `keyring.registration.reveal_taken`, for the two pages nobody reaches without it: with it a new user is signed in before verifying their address, sees `auth/verify-email`, and verifies with the button on `auth/email-verification`.
 
-There's no CI yet: it would need to check out the private Keyring repository next to this one.
+There's no CI yet.
+
+## Working on Keyring Itself
+
+To try changes to Keyring here before they're released, put a checkout of it next to this app (`../keyring`) and point Composer at it:
+
+```bash
+composer config repositories.keyring path ../keyring
+composer require keyring/keyring:@dev
+```
+
+Composer then symlinks `../keyring`. For the browser package, `npm install ../keyring/js` after building it there (`cd ../keyring/js && bun install && bun run build`). Don't commit either change: `git checkout composer.json composer.lock package.json package-lock.json` and `composer install && npm install` put the published versions back.
