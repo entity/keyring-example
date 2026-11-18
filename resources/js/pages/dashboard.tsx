@@ -49,8 +49,8 @@ type DemoSettings = {
 type Step = {
     title: string;
     text: string;
-    /** Where to go to try it. */
-    href: string | ReturnType<typeof editSecurity>;
+    /** Where to go to try it, if there's anywhere. */
+    href?: string | ReturnType<typeof editSecurity>;
     where: string;
     /** For the ones that need a setting: whether it's on. */
     setting?: { on: boolean; name: string };
@@ -132,7 +132,8 @@ function tour(settings: DemoSettings): Step[] {
             text: settings.emailPreviews
                 ? 'Every email Keyring sends, with sample content. The ones sent for real go to storage/logs/laravel.log.'
                 : 'Emails go to storage/logs/laravel.log. While running locally, /emails shows every one Keyring sends, with sample content.',
-            href: '/emails',
+            // The gallery only exists locally: anywhere else it's a 404.
+            href: settings.emailPreviews ? '/emails' : undefined,
             where: '/emails',
             setting: { on: settings.emailPreviews, name: 'APP_ENV=local' },
             external: true,
@@ -268,6 +269,14 @@ export default function Dashboard() {
 
                         const className =
                             'group block rounded-xl focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none';
+
+                        if (!step.href) {
+                            return (
+                                <div key={step.title} className="rounded-xl">
+                                    {card}
+                                </div>
+                            );
+                        }
 
                         return step.external ? (
                             <a
