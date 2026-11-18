@@ -164,14 +164,16 @@ return [
     | "demo" is for playing with on your own machine, never for a real app.
     | It puts every request wherever the login page's "Pretend to be in"
     | picker says (London until you pick), so you can travel from London to
-    | Tokyo in a minute and watch the sign in get refused.
+    | Tokyo in a minute and watch the sign in get refused. Anyone can say
+    | where they are with it, so it's only taken when APP_ENV is local or
+    | testing: anywhere else, KEYRING_LOCATOR=demo means no locator.
     |
     */
 
     'devices' => [
         'locator' => match (env('KEYRING_LOCATOR')) {
             'cloudflare' => HeaderLocator::class,
-            'demo' => DemoLocator::class,
+            'demo' => in_array(env('APP_ENV'), DemoLocator::ENVIRONMENTS, true) ? DemoLocator::class : NullLocator::class,
             default => NullLocator::class,
         },
     ],

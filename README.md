@@ -63,11 +63,11 @@ A new country and impossible travel together score 90, which refuses the sign in
 Nothing is located by default. `KEYRING_LOCATOR` in `.env` picks a locator (`config/keyring.php`):
 
 ```ini
-KEYRING_LOCATOR=demo         # a "Pretend to be in" picker on the login page, for localhost only
+KEYRING_LOCATOR=demo         # a "Pretend to be in" picker on the login page, only when APP_ENV is local or testing
 KEYRING_LOCATOR=cloudflare   # Cloudflare's CF-IPCountry (and city and coordinates) headers
 ```
 
-`demo` is `App\Support\DemoLocator`, a demo aid and nothing more: it puts each request wherever the login page's picker says (a cookie, London until you pick), so the location signals can be tried on a machine where every request comes from `127.0.0.1`. Paris after London is a new country, which asks for a second factor. Tokyo or New York straight after is impossible travel too, and the sign in is refused (and logged, and emailed). Locations also show on Settings → Security.
+`demo` is `App\Support\DemoLocator`, a demo aid and nothing more: it puts each request wherever the login page's picker says (a cookie, London until you pick), so the location signals can be tried on a machine where every request comes from `127.0.0.1`. Anyone can set that cookie, so it's only taken when `APP_ENV` is `local` or `testing`. Anywhere else `KEYRING_LOCATOR=demo` means no locator, and the picker and its route are gone. Paris after London is a new country, which asks for a second factor. Tokyo or New York straight after is impossible travel too, and the sign in is refused (and logged, and emailed). Locations also show on Settings → Security.
 
 `cloudflare` is Keyring's `HeaderLocator`. Only use it when every request has to come through Cloudflare: anyone who can reach the app directly can send those headers and say where they are. For a real lookup by IP address, see [Locations with stevebauman/location](https://github.com/entity/keyring/blob/main/docs/recipes.md#locations-with-stevebaumanlocation).
 

@@ -12,8 +12,10 @@ use Keyring\Contracts\LocatesIps;
  * last put this browser (a cookie), and London until then.
  *
  * Only for the demo: anyone can set the cookie and be wherever they like.
- * A real app looks the IP address up (see "Locations" in Keyring's docs),
- * or reads its proxy's headers, as KEYRING_LOCATOR=cloudflare does.
+ * So it only works while the app runs locally or under test, and finds
+ * nothing anywhere else. A real app looks the IP address up (see
+ * "Locations" in Keyring's docs), or reads its proxy's headers, as
+ * KEYRING_LOCATOR=cloudflare does.
  */
 class DemoLocator implements LocatesIps
 {
@@ -34,11 +36,17 @@ class DemoLocator implements LocatesIps
     public const string DEFAULT = 'london';
 
     /**
-     * @return array<string, mixed>
+     * Where it can be used. Not "e2e", which the browser tests run under:
+     * they don't need it.
      */
-    public function locate(Request $request): array
+    public const array ENVIRONMENTS = ['local', 'testing'];
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function locate(Request $request): ?array
     {
-        return self::PLACES[self::current($request)];
+        return self::allowed() ? self::PLACES[self::current($request)] : null;
     }
 
     /**
@@ -51,8 +59,17 @@ class DemoLocator implements LocatesIps
         return is_string($place) && array_key_exists($place, self::PLACES) ? $place : self::DEFAULT;
     }
 
+    /**
+     * Whether the login page's picker is there: with KEYRING_LOCATOR=demo,
+     * and only where the demo locator is allowed.
+     */
     public static function enabled(): bool
     {
-        return config('keyring.devices.locator') === self::class;
+        return self::allowed() && config('keyring.devices.locator') === self::class;
+    }
+
+    public static function allowed(): bool
+    {
+        return app()->environment(self::ENVIRONMENTS);
     }
 }
