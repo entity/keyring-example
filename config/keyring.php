@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Support\DemoLocator;
+use Keyring\Devices\HeaderLocator;
+use Keyring\Devices\NullLocator;
 use Keyring\Features;
 
 return [
@@ -82,8 +85,9 @@ return [
 
     'enrollment_url' => '/settings/security',
 
-    // The pages anyone can open stay open to them meanwhile.
-    'enrollment_except' => ['home', 'well-known.passkeys'],
+    // The pages anyone can open stay open to them meanwhile, and so do the
+    // local-only links into each state of the app (example:links).
+    'enrollment_except' => ['home', 'well-known.passkeys', 'demo.state'],
 
     /*
     |--------------------------------------------------------------------------
@@ -114,7 +118,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Password Word List
+    | Password Word List and Breached Passwords
     |--------------------------------------------------------------------------
     |
     | Words a password mustn't be made up of, on top of the app's name and
@@ -122,10 +126,61 @@ return [
     | is the documented list OWASP ASVS 6.1.2 asks for: the names of the
     | organisation, its products and its projects.
     |
+    | New passwords are checked against Have I Been Pwned as Keyring does by
+    | default: in production only, so local and test runs make no network
+    | calls. BREACHED_PASSWORD_CHECK=true checks them everywhere, and
+    | KeyringServiceProvider then adds the BreachedPassword signal, which
+    | checks the password at every sign in too and sends a user whose
+    | password it finds to choose another. BREACHED_PASSWORD_CHECK=false
+    | turns the check off, production included. Only the first five
+    | characters of the password's SHA-1 leave the server.
+    |
+    | When the service can't be reached, a new password is let through.
+    | BREACHED_PASSWORD_REFUSE_UNCHECKED refuses it instead, and asks the
+    | user to try again in a moment.
+    |
     */
 
     'passwords' => [
         'context' => ['Keyring', 'Entity', 'Laravel', 'Starter Kit'],
+        // Unset (or empty) leaves Keyring's default: null.
+        'uncompromised' => match ($check = env('BREACHED_PASSWORD_CHECK')) {
+            null, '' => null,
+            default => (bool) $check,
+        },
+        'refuse_unchecked' => (bool) env('BREACHED_PASSWORD_REFUSE_UNCHECKED', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Locations
+    |--------------------------------------------------------------------------
+    |
+    | Where each sign in comes from, for the device list and the NewCountry
+    | and ImpossibleTravel signals. Nothing by default, and KEYRING_LOCATOR
+    | picks one:
+    |
+    | "cloudflare" reads the headers Cloudflare adds (CF-IPCountry, and with
+    | its "Add visitor location headers" transform the city and the
+    | coordinates). Only use it when every request has to come through
+    | Cloudflare: anyone who can reach the app directly can send those
+    | headers themselves and say where they are.
+    |
+    | "demo" is for playing with on your own machine, never for a real app.
+    | It puts every request wherever the login page's "Pretend to be in"
+    | picker says (London until you pick), so you can travel from London to
+    | Tokyo in a minute and watch the sign in get refused. Anyone can say
+    | where they are with it, so it's only taken when APP_ENV is local or
+    | testing: anywhere else, KEYRING_LOCATOR=demo means no locator.
+    |
+    */
+
+    'devices' => [
+        'locator' => match (env('KEYRING_LOCATOR')) {
+            'cloudflare' => HeaderLocator::class,
+            'demo' => in_array(env('APP_ENV'), DemoLocator::ENVIRONMENTS, true) ? DemoLocator::class : NullLocator::class,
+            default => NullLocator::class,
+        },
     ],
 
     /*

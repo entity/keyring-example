@@ -9,10 +9,10 @@ use App\Actions\Keyring\ResetUserPassword;
 use App\Actions\Keyring\UpdateUserPassword;
 use App\Actions\Keyring\ValidateEmailChange;
 use App\Notifications\Keyring as Notifications;
-use App\Support\SupportContact;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Http\Kernel;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\ServiceProvider;
 use Keyring\Facades\Keyring;
 use Keyring\Factors\EmailCode;
@@ -23,8 +23,12 @@ use Keyring\Factors\WebAuthn;
 use Keyring\Login\Requirement;
 use Keyring\Notifications\CloneSuspected;
 use Keyring\Notifications\SecurityNotice;
+use Keyring\Risk\Signals\BreachedPassword;
+use Keyring\Risk\Signals\ImpossibleTravel;
 use Keyring\Risk\Signals\InactiveAccount;
+use Keyring\Risk\Signals\NewCountry;
 use Keyring\Risk\Signals\NewDevice;
+use Keyring\Risk\Signals\RecentlyChangedRecovery;
 use Keyring\Risk\Signals\RepeatedFactorFailures;
 use Keyring\Risk\Signals\SessionFingerprintChanged;
 use Keyring\Risk\Signals\SuccessAfterFailures;
@@ -66,8 +70,14 @@ class KeyringServiceProvider extends ServiceProvider
 
         // Keyring sends its own security notices. This app only gives them
         // its look: every one is built from one Maizzle template,
-        // resources/emails/keyring/notice.vue.
-        SecurityNotice::toMailUsing(self::noticeMail(...));
+        // resources/emails/keyring/notice.vue, with a tone, icon and
+        // details per notice from NoticeMail.
+        SecurityNotice::toMailUsing(Notifications\NoticeMail::build(...));
+
+        // Laravel's own verification and password reset emails, which
+        // Keyring sends during registration and resets, in the same look.
+        VerifyEmail::toMailUsing(Notifications\LaravelMail::verifyEmail(...));
+        ResetPassword::toMailUsing(Notifications\LaravelMail::resetPassword(...));
 
         // The five emails a flow needs each have a shape of their own, so
         // they're this app's classes, in app/Notifications/Keyring, with a
@@ -83,40 +93,57 @@ class KeyringServiceProvider extends ServiceProvider
         ]);
 
         // What makes a sign in or a session look wrong. Keyring's own
-        // response does the rest: a second factor at medium, an email to the
-        // owner from high, and a refused sign in at critical. A sign in
-        // after a long quiet period, or after several failed attempts,
-        // emails the owner whatever it scores.
+        // response does the rest: a second factor at 30 (medium), an email
+        // to the owner from 60 (high), and a refused sign in at 90
+        // (critical). A sign in after a long quiet period, or after several
+        // failed attempts, emails the owner whatever it scores.
+        //
+        // The scores add up, so they're picked so that a stranger can't get
+        // the real owner refused. The most the owner's own sign in can score
+        // is a new device (15) in a new country (30) after 90 quiet days
+        // (30), which is 75. The address changing this week (25) can't come
+        // on top of the quiet days, since changing it takes a signed-in
+        // session. Anyone who knows the email address can then add failed
+        // attempts, so SuccessAfterFailures is cut from 30 to 10: 85, short
+        // of 90. At 30 it would take that sign in to 105, and be refused.
+        // RepeatedFactorFailures takes the password to raise, so it isn't
+        // a stranger's to add, though the owner's own mistyped codes can
+        // add it (and SuccessAfterFailures) to their next sign in. tests/Feature/RiskSignalsTest.php checks the
+        // sums: check them again when changing a score or adding a signal.
         Keyring::risk()->signals([
             NewDevice::class,
             RepeatedFactorFailures::class,
             SessionFingerprintChanged::class,
             InactiveAccount::class,
-            SuccessAfterFailures::class,
+            // Every enrolled user is asked for a second factor at every
+            // sign in here anyway, so the score this gives up only mattered
+            // for asking. The owner is still emailed about the failures.
+            $this->app->make(SuccessAfterFailures::class, ['score' => 10]),
+            // Email changes are on, and an address that changed this week
+            // shouldn't be trusted on its own.
+            RecentlyChangedRecovery::class,
+            // These two stay quiet until there's a locator (KEYRING_LOCATOR,
+            // see config/keyring.php), so they're always on. A new country
+            // and impossible travel together add up to 90, which refuses
+            // the sign in: on the demo locator, sign in from London and then
+            // from Tokyo to see it.
+            NewCountry::class,
+            ImpossibleTravel::class,
+            // Every password sign in asks Have I Been Pwned, so it's only on
+            // with BREACHED_PASSWORD_CHECK=true, not with Keyring's default
+            // (null), which only checks new passwords in production. A
+            // password it finds holds the user on the security page until
+            // they choose another, whatever it scores, so it scores nothing:
+            // at Keyring's 40 it would take the owner's 75 past 90 on its
+            // own once a stranger added failed attempts.
+            ...config('keyring.passwords.uncompromised') === true
+                ? [$this->app->make(BreachedPassword::class, ['score' => 0])]
+                : [],
         ]);
 
         // Keyring's pages already match the starter kit's names (auth/login,
         // auth/challenge...). Step-up confirmation reuses the challenge page.
         Keyring::page('confirm', 'auth/challenge');
-    }
-
-    /**
-     * The email of every security notice, from the one Maizzle template
-     * `npm run emails` builds into these two views. Blade escapes what the
-     * HTML one prints, so a name someone typed can't add markup to it.
-     */
-    protected static function noticeMail(SecurityNotice $notice, object $notifiable): MailMessage
-    {
-        $details = array_filter([__('When') => $notice->when, __('Device') => $notice->device, __('IP address') => $notice->ip]);
-
-        return (new MailMessage)->subject($notice->subject())->view(['html' => 'emails.keyring.notice', 'text' => 'emails.keyring.text.notice'], [
-            'subject' => $notice->subject(),
-            'intro' => $notice->intro(),
-            'details' => array_map(fn (string $label, string $value) => ['label' => $label, 'value' => $value], array_keys($details), $details),
-            'actionText' => $notice->action(),
-            'actionUrl' => $notice->action() === null ? null : $notice->url,
-            ...SupportContact::for($notice->contact),
-        ]);
     }
 
     /**

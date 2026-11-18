@@ -1,51 +1,50 @@
 <?php
 
-use Illuminate\Notifications\AnonymousNotifiable;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DemoLocationController;
+use App\Http\Controllers\DemoStateController;
+use App\Http\Controllers\WelcomeController;
+use App\Support\EmailGallery;
 use Illuminate\Support\Facades\Route;
-use Keyring\Facades\Keyring;
-use Keyring\KeyringManager;
 
-Route::inertia('/', 'welcome')->name('home');
+Route::get('/', WelcomeController::class)->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    Route::get('dashboard', DashboardController::class)->name('dashboard');
 });
 
-// While developing, see each of Keyring's emails in the browser with sample
-// content: /emails lists them, /emails/new_device shows one.
+// The login page's "Pretend to be in" picker, with KEYRING_LOCATOR=demo.
+Route::post('demo-location', DemoLocationController::class)->name('demo-location');
+
+// While developing, see every email the app sends in the browser, with
+// sample content: /emails is a gallery of them, /emails/new_device shows one
+// and /emails/new_device/text its plain text part.
 if (app()->isLocal()) {
-    Route::get('emails', fn () => collect(KeyringManager::NOTIFICATIONS)
-        ->map(fn (string $type) => sprintf('<li><a href="%s">%s</a></li>', route('emails.show', $type), $type))
-        ->prepend('<ul style="font: 16px/2 system-ui; padding: 2rem 3rem">')
-        ->implode(''));
+    // Signed, expiring links straight into one state of the app, like halfway
+    // through a sign in: `php artisan example:links` prints them.
+    Route::get('try/{state}', DemoStateController::class)
+        ->middleware('signed:relative')
+        ->whereIn('state', array_keys(DemoStateController::STATES))
+        ->name('demo.state');
 
-    Route::get('emails/{type}', function (string $type) {
-        $notification = Keyring::requiredNotification($type, [
-            'when' => now()->toDayDateTimeString(),
-            'at' => now(),
-            'device' => 'Firefox on Windows',
-            'ip' => '203.0.113.7',
-            'name' => 'YubiKey 5C',
-            'remaining' => 7,
-            'reasons' => 'Signing in from a new country (NL).',
-            'url' => url('/'),
-            'expiresAt' => now()->addDay(),
-            'code' => '12345678',
-            'minutes' => 10,
-            'enrolling' => false,
-            'email' => 'n•••@example.com',
-            'revertUrl' => url('/'),
-            'confirmUrl' => url('/'),
-            'loginUrl' => route('login'),
-            'resetUrl' => route('password.request'),
-        ]);
+    $gallery = new EmailGallery;
 
-        abort_unless(method_exists($notification, 'toMail'), 404);
+    Route::get('emails', fn () => view('emails.gallery', ['groups' => $gallery->groups()]))
+        ->name('emails.index');
 
-        return $notification->toMail(new AnonymousNotifiable)->render();
-    })
-        ->whereIn('type', KeyringManager::NOTIFICATIONS)
+    Route::get('emails/{type}', fn (string $type) => $gallery->sample($type)->render())
+        ->whereIn('type', $gallery->types())
         ->name('emails.show');
+
+    Route::get('emails/{type}/text', function (string $type) use ($gallery) {
+        $text = $gallery->text($type);
+
+        abort_if($text === null, 404);
+
+        return response($text)->header('Content-Type', 'text/plain; charset=utf-8');
+    })
+        ->whereIn('type', $gallery->types())
+        ->name('emails.text');
 }
 
 require __DIR__.'/settings.php';

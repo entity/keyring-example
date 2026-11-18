@@ -9,46 +9,45 @@
             this address.
         </template>
 
-        <Heading
-            class="m-0 text-2xl/8 font-semibold text-slate-900 dark:text-white"
-        >
-            You already have an account
-        </Heading>
+        <NotPlaintext>
+            <Hero tone="info" icon="user-round-check"
+                >You already have an account</Hero
+            >
+        </NotPlaintext>
+        <Plaintext>You already have an account</Plaintext>
 
-        <Text class="m-0 mt-4 text-base/7 text-slate-600 dark:text-slate-300">
+        <Lead>
             Someone tried to create an account with this email address. It
             already has one, so nothing was created or changed.
-        </Text>
+        </Lead>
 
         <Spacer class="h-8" />
-        <Button
-            href="{{ $loginUrl }}"
-            class="rounded-lg bg-slate-900 text-sm font-semibold text-white dark:bg-white dark:text-slate-900"
-        >
-            Sign in
-        </Button>
+        <Action href="{{ $loginUrl }}">Sign in</Action>
 
         <Raw>@isset($resetUrl)</Raw>
-        <Spacer class="h-8" />
-        <Hr class="border-slate-200 dark:border-slate-700" />
-        <Spacer class="h-6" />
-
-        <Text class="m-0 text-sm/6 text-slate-600 dark:text-slate-300">
-            Forgotten your password?
-        </Text>
-        <Spacer class="h-4" />
-        <Button
-            href="{{ $resetUrl }}"
-            variant="outline"
-            class="rounded-lg border-slate-300 text-sm font-semibold text-slate-900 dark:border-slate-600 dark:text-white"
-        >
-            Reset your password
-        </Button>
+        <NotPlaintext>
+            <Note>
+                Forgotten your password?
+                <Link
+                    href="{{ $resetUrl }}"
+                    class="font-medium text-[#111010] underline dark:text-[#f1f2f4]"
+                    >Reset your password</Link
+                >
+            </Note>
+        </NotPlaintext>
+        <Plaintext>
+            <div>
+                Forgotten your password? Reset your password:<br /><Raw>{{
+                    $resetUrl
+                }}</Raw>
+            </div>
+        </Plaintext>
         <Raw>@endisset</Raw>
 
-        <Spacer class="h-8" />
-        <Text class="m-0 text-sm/6 text-slate-500 dark:text-slate-400">
-            If this wasn't you, you can ignore this email.
-        </Text>
+        <template #aside>
+            <Advice title="Wasn't you?">
+                You can ignore this email. Your account hasn't changed.
+            </Advice>
+        </template>
     </Shell>
 </template>

@@ -1,13 +1,30 @@
+@php(ob_start())
+@php($root = \Keyring\Facades\Keyring::linkRoot())
+
+@php($images = $root.'/images/emails')
+
 {!! config('app.name') !!}
 
 Confirm your new email address
 
-Please confirm this is the new email address for your account.
+Someone asked to use this address for their account. If that was you, confirm it to finish the change. This link expires {!! $expires !!}.
 
-Confirm email address
-
+Confirm email address:
 {!! $url !!}
 
-This link expires . If you didn't ask for this, you can ignore this email.
+Didn't ask for this?
+
+You can ignore this email. Nothing changes unless the link is used.
+
+@isset($contact)
+
+If this wasn't you and you need help, contact us: {!! $contact !!}
+
+@endisset
 
 You're getting this email because someone asked to use this address for their account.
+
+{!! config('app.name') !!}
+
+{!! $root !!}
+{!! trim(preg_replace('/\n\s*\n/', "\n\n", ob_get_clean())) !!}

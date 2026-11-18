@@ -48,8 +48,12 @@ class DatabaseSeeder extends Seeder
 
         $established = ['created_at' => now()->subMonth()];
 
-        Authenticator::factory()->totp(self::TOTP_SECRET)->default()->for($user, 'authenticatable')->create($established);
+        // Last used for yesterday's sign in in ActivitySeeder's history.
+        Authenticator::factory()->totp(self::TOTP_SECRET)->default()->for($user, 'authenticatable')->create([...$established, 'last_used_at' => now()->subDay()->setTime(10, 20)]);
         Authenticator::factory()->recoveryCodes(self::RECOVERY_CODES)->for($user, 'authenticatable')->create($established);
+
+        // A month of sign ins and changes for Settings → Security to show.
+        (new ActivitySeeder)->run($user);
 
         $this->command?->table(['Account', 'Password', 'Second factor'], [
             ['demo@keyring.test', 'password', 'none yet: signing in asks for one to be added'],

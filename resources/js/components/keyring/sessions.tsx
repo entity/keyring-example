@@ -1,5 +1,4 @@
 import {
-    endOtherSessions,
     endSession,
     KeyringRequestError,
     type Session,
@@ -7,12 +6,18 @@ import {
 import { router } from '@inertiajs/react';
 import { MonitorSmartphone } from 'lucide-react';
 import { useState } from 'react';
-import Heading from '@/components/heading';
 import { ago } from '@/components/keyring/sign-in-methods';
+import RowIcon from '@/components/keyring/row-icon';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    InsetCardDescription,
+    InsetCardList,
+    InsetCardTitle,
+} from '@/components/ui/inset-card';
 import { Spinner } from '@/components/ui/spinner';
 import { run } from '@/keyring/actions';
+import { type Place, place } from '@/keyring/format';
 import { login } from '@/routes';
 
 /**
@@ -25,7 +30,14 @@ import { login } from '@/routes';
  * changes when a session moves to a new record, so the list is reloaded
  * after every change.
  */
-export default function Sessions({ sessions }: { sessions: Session[] }) {
+export default function Sessions({
+    sessions,
+    locations,
+}: {
+    sessions: Session[];
+    /** Where each device was last seen, by its ID. */
+    locations: Record<string, Place>;
+}) {
     const [ending, setEnding] = useState<string | null>(null);
 
     async function end(session: Session) {
@@ -61,22 +73,25 @@ export default function Sessions({ sessions }: { sessions: Session[] }) {
     }
 
     return (
-        <div className="space-y-6">
-            <Heading
-                variant="small"
-                title="Sessions"
-                description="Each time your account is signed in. A session ends after two hours unused, or 14 days away with “Remember me”, and 30 days after it signed in."
-            />
+        <div className="flex flex-col gap-1">
+            <div className="px-3 pt-2 pb-1">
+                <InsetCardTitle as="h3">Sessions</InsetCardTitle>
+                <InsetCardDescription>
+                    Each time your account is signed in. A session ends after
+                    two hours unused, or 14 days away with “Remember me”, and 30
+                    days after it signed in.
+                </InsetCardDescription>
+            </div>
 
-            <ul className="divide-y rounded-lg border">
+            <InsetCardList>
                 {sessions.map((session) => (
                     <li
                         key={session.id}
-                        className="flex items-center gap-3 p-4"
+                        className="flex items-center gap-3 px-4 py-3"
                     >
-                        <MonitorSmartphone className="size-5 text-muted-foreground" />
+                        <RowIcon icon={MonitorSmartphone} />
                         <div className="min-w-0 flex-1">
-                            <p className="flex items-center gap-2 text-sm font-medium">
+                            <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium">
                                 <span className="truncate">
                                     {session.name ?? 'Unknown browser'}
                                 </span>
@@ -89,6 +104,11 @@ export default function Sessions({ sessions }: { sessions: Session[] }) {
                             </p>
                             <p className="text-xs text-muted-foreground">
                                 {[
+                                    place(
+                                        session.device
+                                            ? locations[session.device]
+                                            : null,
+                                    ),
                                     session.ip,
                                     `signed in ${ago(session.signedInAt)}`,
                                     `active ${ago(session.lastActiveAt)}`,
@@ -98,7 +118,7 @@ export default function Sessions({ sessions }: { sessions: Session[] }) {
                             </p>
                         </div>
                         <Button
-                            variant="ghost"
+                            variant="secondary"
                             size="sm"
                             disabled={ending !== null}
                             onClick={() => void end(session)}
@@ -108,17 +128,7 @@ export default function Sessions({ sessions }: { sessions: Session[] }) {
                         </Button>
                     </li>
                 ))}
-            </ul>
-
-            {sessions.length > 1 && (
-                <Button
-                    variant="outline"
-                    disabled={ending !== null}
-                    onClick={() => void run(() => endOtherSessions())}
-                >
-                    Sign out my other sessions
-                </Button>
-            )}
+            </InsetCardList>
         </div>
     );
 }

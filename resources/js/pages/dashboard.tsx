@@ -1,14 +1,10 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { TriangleAlert } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { ArrowRight, TriangleAlert } from 'lucide-react';
 import { ago } from '@/components/keyring/sign-in-methods';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import StatusMessage from '@/components/status-message';
+import { Badge } from '@/components/ui/badge';
+import { InsetCard, InsetCardBody } from '@/components/ui/inset-card';
 import { dashboard } from '@/routes';
 import { edit as editProfile } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
@@ -33,45 +29,126 @@ const alertText: Record<string, string> = {
         'A “remember me” cookie was used twice, so that session was ended',
 };
 
-const tour = [
-    {
-        title: 'Add a passkey',
-        text: 'Settings → Security → Add → Passkey. Then sign out and use "Sign in with a passkey", or pick it from the email field’s autofill.',
-        href: editSecurity(),
-    },
-    {
-        title: 'Add a second factor',
-        text: 'Everyone needs one here, so a new account is sent to Security until it has a passkey, a security key or an authenticator app. The first one comes with recovery codes.',
-        href: editSecurity(),
-    },
-    {
-        title: 'Try step-up',
-        text: 'Security settings need a verification from the last 15 minutes, with the strongest proof your account has: if you have a security key, that’s what it asks for.',
-        href: editSecurity(),
-    },
-    {
-        title: 'See your sessions',
-        text: 'Settings → Security lists every session and device. End one, or sign out everywhere else, also while adding or removing a sign-in method.',
-        href: editSecurity(),
-    },
-    {
-        title: 'Change your email',
-        text: 'The new address must confirm, and the old one gets an undo link. The emails are in storage/logs/laravel.log.',
-        href: editProfile(),
-    },
-];
+type DemoSettings = {
+    /** Which locator KEYRING_LOCATOR picked, if any. */
+    locator: 'demo' | 'cloudflare' | 'other' | null;
+    /**
+     * Have I Been Pwned: sign ins only with BREACHED_PASSWORD_CHECK=true,
+     * new passwords then or, left unset, in production.
+     */
+    breachCheck: { signIns: boolean; newPasswords: boolean };
+    /** The /emails previews, which only exist while running locally. */
+    emailPreviews: boolean;
+};
+
+type Step = {
+    title: string;
+    text: string;
+    /** Where to go to try it, if there's anywhere. */
+    href?: string | ReturnType<typeof editSecurity>;
+    where: string;
+    /** For the ones that need a setting: whether it's on. */
+    setting?: { on: boolean; name: string };
+    external?: boolean;
+};
+
+function tour(settings: DemoSettings): Step[] {
+    return [
+        {
+            title: 'Add a passkey',
+            text: 'Add one, then sign out and use “Sign in with a passkey”, or pick it from the email field’s autofill.',
+            href: editSecurity(),
+            where: 'Settings → Security → Add',
+        },
+        {
+            title: 'Add a second factor',
+            text: 'Everyone needs one here, so a new account is sent to Security until it has a passkey, a security key or an authenticator app. The first one comes with recovery codes.',
+            href: editSecurity(),
+            where: 'Settings → Security',
+        },
+        {
+            title: 'Try step-up',
+            text: 'Security settings need a verification from the last 15 minutes, with the strongest proof your account has: if you have a security key, that’s what it asks for.',
+            href: editSecurity(),
+            where: 'Settings → Security',
+        },
+        {
+            title: 'End your other sessions',
+            text: 'Sign in from a second browser, then see both here. End one, sign out everywhere else, or tick the box to do it while adding or removing a sign-in method.',
+            href: editSecurity(),
+            where: 'Settings → Security',
+        },
+        {
+            title: 'Trip a risk signal',
+            text: 'Get the password wrong five times, wait a minute, then sign in: Keyring emails you about the failed attempts. Get the password right and the code wrong, and the next sign in asks “Was this you?”. Recent activity shows what was found and what was done.',
+            href: editSecurity(),
+            where: 'Settings → Security → Recent activity',
+        },
+        {
+            title: 'Travel faster than a plane',
+            text:
+                settings.locator === 'demo'
+                    ? 'Sign out and pick a city on the login page. Paris after London is a new country, and asks for a second factor. Tokyo a minute later is impossible travel too, and the sign in is refused.'
+                    : 'Start the app with KEYRING_LOCATOR=demo and the login page lets you pretend to be in London, Paris, New York or Tokyo, to trip the new country and impossible travel signals.',
+            href: editSecurity(),
+            where: 'Settings → Security → devices',
+            setting: {
+                on: settings.locator === 'demo',
+                name: 'KEYRING_LOCATOR=demo',
+            },
+        },
+        {
+            title: 'Use a breached password',
+            text:
+                (settings.breachCheck.signIns
+                    ? 'Signing in'
+                    : 'With BREACHED_PASSWORD_CHECK=true, signing in') +
+                ' with a password from a known breach holds you on Security until you choose another (the demo accounts’ “password” is one), and a breached new password is refused.' +
+                (settings.breachCheck.signIns
+                    ? ''
+                    : settings.breachCheck.newPasswords
+                      ? ' For now only new passwords are checked, as Keyring does in production.'
+                      : ' Every check asks Have I Been Pwned, so Keyring only checks new passwords in production unless you say otherwise.'),
+            href: editSecurity(),
+            where: 'Settings → Security → Change password',
+            setting: {
+                on: settings.breachCheck.signIns,
+                name: 'BREACHED_PASSWORD_CHECK=true',
+            },
+        },
+        {
+            title: 'Change your email',
+            text: 'The new address must confirm, and the old one gets an undo link. For a week afterwards, a sign in counts the change as a risk signal.',
+            href: editProfile(),
+            where: 'Settings → Profile',
+        },
+        {
+            title: 'Read the emails',
+            text: settings.emailPreviews
+                ? 'Every email Keyring sends, with sample content. The ones sent for real go to storage/logs/laravel.log.'
+                : 'Emails go to storage/logs/laravel.log. While running locally, /emails shows every one Keyring sends, with sample content.',
+            // The gallery only exists locally: anywhere else it's a 404.
+            href: settings.emailPreviews ? '/emails' : undefined,
+            where: '/emails',
+            setting: { on: settings.emailPreviews, name: 'APP_ENV=local' },
+            external: true,
+        },
+    ];
+}
 
 export default function Dashboard() {
-    const { keyringAlerts, replaceRecoveryCodes, statusMessage } = usePage<{
-        keyringAlerts: KeyringAlert[];
-        replaceRecoveryCodes: boolean;
-        statusMessage: string | null;
-    }>().props;
+    const { keyringAlerts, replaceRecoveryCodes, statusMessage, demoSettings } =
+        usePage<{
+            keyringAlerts: KeyringAlert[];
+            replaceRecoveryCodes: boolean;
+            statusMessage: string | null;
+            demoSettings: DemoSettings;
+        }>().props;
 
     return (
         <>
             <Head title="Dashboard" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+            <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
                 {keyringAlerts.length > 0 && (
                     <Alert variant="destructive">
                         <TriangleAlert />
@@ -100,7 +177,7 @@ export default function Dashboard() {
                 )}
 
                 {replaceRecoveryCodes && (
-                    <Alert>
+                    <Alert variant="warning">
                         <TriangleAlert />
                         <AlertTitle>Make new recovery codes</AlertTitle>
                         <AlertDescription>
@@ -119,37 +196,104 @@ export default function Dashboard() {
                 )}
 
                 {statusMessage && (
-                    <p className="text-sm font-medium text-green-600">
-                        {statusMessage}
-                    </p>
+                    <StatusMessage>{statusMessage}</StatusMessage>
                 )}
 
-                <div>
-                    <h2 className="text-lg font-semibold">Keyring example</h2>
+                <div className="space-y-1">
+                    <h2 className="text-xl font-medium tracking-tight">
+                        Things to try
+                    </h2>
                     <p className="text-sm text-muted-foreground">
-                        Things to try. Everything here is Keyring, swapped in
-                        for Fortify.
+                        Everything here is Keyring, swapped in for Fortify. The{' '}
+                        <a
+                            href="https://github.com/entity/keyring/tree/main/docs"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="underline underline-offset-4"
+                        >
+                            docs
+                        </a>{' '}
+                        explain each one.
                     </p>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                    {tour.map((step) => (
-                        <Link
-                            key={step.title}
-                            href={step.href}
-                            className="block"
-                        >
-                            <Card className="h-full transition-colors hover:bg-muted/50">
-                                <CardHeader>
-                                    <CardTitle>{step.title}</CardTitle>
-                                    <CardDescription>
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {tour(demoSettings).map((step) => {
+                        const card = (
+                            <InsetCard className="h-full transition-[box-shadow,transform] duration-150 ease-out-quint group-active:scale-[0.99] motion-reduce:transition-none motion-reduce:group-active:scale-100">
+                                <div className="flex min-h-9 items-center justify-between gap-2 px-3 pt-1.5 pb-0.5">
+                                    <h3 className="text-sm font-medium">
+                                        {step.title}
+                                    </h3>
+                                    {step.setting && (
+                                        <Badge
+                                            variant={
+                                                step.setting.on
+                                                    ? 'success'
+                                                    : 'secondary'
+                                            }
+                                            title={step.setting.name}
+                                        >
+                                            {step.setting.on ? 'On' : 'Off'}
+                                        </Badge>
+                                    )}
+                                </div>
+                                <InsetCardBody className="flex flex-1 flex-col gap-4 p-4 transition-colors duration-150 group-hover:bg-card/60 group-focus-visible:bg-card/60">
+                                    <p className="text-[13px] leading-5 text-muted-foreground">
                                         {step.text}
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent />
-                            </Card>
-                        </Link>
-                    ))}
+                                    </p>
+                                    <p className="mt-auto flex flex-wrap items-center gap-x-1 text-xs text-muted-foreground">
+                                        {step.setting && !step.setting.on ? (
+                                            <>
+                                                Needs{' '}
+                                                <code className="rounded bg-muted px-1 font-mono text-foreground">
+                                                    {step.setting.name}
+                                                </code>
+                                            </>
+                                        ) : (
+                                            <>
+                                                {step.where}
+                                                {step.href && (
+                                                    <ArrowRight className="size-3 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transition-none" />
+                                                )}
+                                            </>
+                                        )}
+                                    </p>
+                                </InsetCardBody>
+                            </InsetCard>
+                        );
+
+                        const className =
+                            'group block rounded-xl outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
+
+                        if (!step.href) {
+                            return (
+                                <div key={step.title} className="rounded-xl">
+                                    {card}
+                                </div>
+                            );
+                        }
+
+                        return step.external ? (
+                            <a
+                                key={step.title}
+                                href={step.href as string}
+                                target="_blank"
+                                rel="noreferrer"
+                                className={className}
+                            >
+                                {card}
+                            </a>
+                        ) : (
+                            <Link
+                                key={step.title}
+                                href={step.href}
+                                className={className}
+                            >
+                                {card}
+                            </Link>
+                        );
+                    })}
                 </div>
             </div>
         </>

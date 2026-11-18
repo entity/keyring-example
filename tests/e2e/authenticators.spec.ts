@@ -1,11 +1,16 @@
 import { expect, type Page, test } from '@playwright/test';
 import { createUser, signInWithTwoFactors, type TestUser } from './helpers';
 
+/** The sign-in methods list, apart from the activity rows that name them. */
+function methods(page: Page) {
+    return page.getByRole('list', { name: 'Sign-in methods' });
+}
+
 async function signInAndManage(page: Page, user: TestUser): Promise<void> {
     await signInWithTwoFactors(page, user);
 
     await page.goto('/settings/security');
-    await page
+    await methods(page)
         .getByRole('listitem')
         .filter({ hasText: 'Authenticator app' })
         .getByRole('button', { name: 'Manage' })
@@ -28,8 +33,11 @@ test('asks for the password before removing the last second factor', async ({
     await dialog.getByRole('button', { name: 'Remove' }).click();
 
     await expect(dialog).toBeHidden();
+    // Recent activity lists the removal too, so only the methods count.
     await expect(
-        page.getByRole('listitem').filter({ hasText: 'Authenticator app' }),
+        methods(page)
+            .getByRole('listitem')
+            .filter({ hasText: 'Authenticator app' }),
     ).toHaveCount(0);
 });
 

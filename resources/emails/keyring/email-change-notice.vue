@@ -7,47 +7,37 @@
     <Shell
         preheader="Someone asked to change the email address on your account."
     >
-        <Heading
-            class="m-0 text-2xl/8 font-semibold text-slate-900 dark:text-white"
-        >
-            Your email address is being changed
-        </Heading>
+        <NotPlaintext>
+            <Hero tone="warning" icon="mail-warning"
+                >Your email address is being changed</Hero
+            >
+        </NotPlaintext>
+        <Plaintext>Your email address is being changed</Plaintext>
 
-        <Text class="m-0 mt-4 text-base/7 text-slate-600 dark:text-slate-300">
+        <Lead>
             Someone asked to change the email address on your account to
-            <Text as="span" class="font-semibold text-slate-900 dark:text-white"
+            <Text
+                as="span"
+                class="font-semibold text-[#111010] dark:text-[#f1f2f4]"
                 ><Raw>{{ $email }}</Raw></Text
             >.
-        </Text>
+        </Lead>
 
         <Raw>@isset($confirmUrl)</Raw>
-        <Text class="m-0 mt-4 text-base/7 text-slate-600 dark:text-slate-300">
-            To finish the change, confirm it from this address too.
-        </Text>
-        <Spacer class="h-6" />
-        <Button
-            href="{{ $confirmUrl }}"
-            class="rounded-lg bg-slate-900 text-sm font-semibold text-white dark:bg-white dark:text-slate-900"
-        >
-            Confirm the change
-        </Button>
+        <Lead>To finish the change, confirm it from this address too.</Lead>
+        <Spacer class="h-8" />
+        <Action href="{{ $confirmUrl }}">Confirm the change</Action>
         <Raw>@endisset</Raw>
 
-        <Spacer class="h-8" />
-        <Hr class="border-slate-200 dark:border-slate-700" />
-        <Spacer class="h-6" />
-
-        <Text class="m-0 text-sm/6 text-slate-600 dark:text-slate-300">
-            Wasn't you? Cancel the change and sign out everywhere:
-        </Text>
-        <Spacer class="h-4" />
-        <Button
-            href="{{ $revertUrl }}"
-            variant="outline"
-            class="rounded-lg border-slate-300 text-sm font-semibold text-slate-900 dark:border-slate-600 dark:text-white"
-        >
-            This wasn't me
-        </Button>
-        <Contact />
+        <template #aside>
+            <Advice title="Wasn't you?">
+                Cancel the change and sign out everywhere, then change your
+                password.
+            </Advice>
+            <NotPlaintext><Spacer class="h-5" /></NotPlaintext>
+            <Action href="{{ $revertUrl }}" variant="secondary"
+                >This wasn't me</Action
+            >
+        </template>
     </Shell>
 </template>

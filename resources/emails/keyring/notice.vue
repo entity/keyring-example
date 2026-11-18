@@ -1,55 +1,60 @@
 <!--
   Every security notice: "your password was changed", "new sign-in" and the
-  rest. KeyringServiceProvider::noticeMail() passes the subject, intro,
-  detail lines and, for some, a button.
+  rest. App\Notifications\Keyring\NoticeMail gives each its tone, icon,
+  details and advice, so one template covers all twelve.
 -->
 <template>
     <Shell>
-        <Heading
-            class="m-0 text-2xl/8 font-semibold text-slate-900 dark:text-white"
+        <template #preheader>
+            <Preview
+                ><Raw>{{ $preheader }}</Raw></Preview
+            >
+        </template>
+
+        <NotPlaintext>
+            <Hero tone="{{ $tone }}" icon="{{ $icon }}">
+                <Raw>{{ $subject }}</Raw>
+            </Hero>
+        </NotPlaintext>
+        <Plaintext
+            ><Raw>{{ $subject }}</Raw></Plaintext
         >
-            <Raw>{{ $subject }}</Raw>
-        </Heading>
 
-        <Text class="m-0 mt-4 text-base/7 text-slate-600 dark:text-slate-300">
-            <Raw>{{ $intro }}</Raw>
-        </Text>
+        <Lead
+            ><Raw>{{ $intro }}</Raw></Lead
+        >
 
-        <Raw>@if ($details !== [])</Raw>
-        <Spacer class="h-6" />
-        <table class="w-full rounded-lg bg-slate-50 dark:bg-slate-800">
-            <Raw>@foreach ($details as $detail)</Raw>
-            <tr>
-                <td
-                    class="w-28 px-4 py-2 align-top text-sm text-slate-500 dark:text-slate-400"
-                >
-                    <Raw>{{ $detail['label'] }}</Raw>
-                </td>
-                <td
-                    class="px-4 py-2 text-sm font-medium text-slate-900 dark:text-white"
-                >
-                    <Raw>{{ $detail['value'] }}</Raw>
-                </td>
-            </tr>
+        <Raw>@if ($reasons !== [])</Raw>
+        <Callout title="What we noticed">
+            <Raw>@foreach ($reasons as $reason)</Raw>
+            <NotPlaintext>
+                <Text class="m-0 mt-1 text-[13px]/5">
+                    <Raw>{{ $reason }}</Raw>
+                </Text>
+            </NotPlaintext>
+            <Plaintext
+                >- <Raw>{{ $reason }}</Raw></Plaintext
+            >
             <Raw>@endforeach</Raw>
-        </table>
+        </Callout>
         <Raw>@endif</Raw>
+
+        <Details />
 
         <Raw>@isset($actionUrl)</Raw>
         <Spacer class="h-8" />
-        <Button
-            href="{{ $actionUrl }}"
-            class="rounded-lg bg-slate-900 text-sm font-semibold text-white dark:bg-white dark:text-slate-900"
-        >
+        <Action href="{{ $actionUrl }}" fallback>
             <Raw>{{ $actionText }}</Raw>
-        </Button>
+        </Action>
         <Raw>@endisset</Raw>
 
-        <Spacer class="h-8" />
-        <Text class="m-0 text-sm/6 text-slate-500 dark:text-slate-400">
-            If this wasn't you, change your password and check your sign-in
-            methods straight away.
-        </Text>
-        <Contact />
+        <template #aside>
+            <Advice>
+                <template #title
+                    ><Raw>{{ $adviceTitle }}</Raw></template
+                >
+                <Raw>{{ $advice }}</Raw>
+            </Advice>
+        </template>
     </Shell>
 </template>

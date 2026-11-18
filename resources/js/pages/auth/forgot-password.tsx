@@ -1,6 +1,7 @@
 // Components
 import { Form, Head } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
+import StatusMessage from '@/components/status-message';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
@@ -14,11 +15,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
         <>
             <Head title="Forgot password" />
 
-            {status && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {status}
-                </div>
-            )}
+            {status && <StatusMessage className="mb-6">{status}</StatusMessage>}
 
             <div className="space-y-6">
                 <Form {...email.form()}>
@@ -38,7 +35,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
                                 <InputError message={errors.email} />
                             </div>
 
-                            <div className="my-6 flex items-center justify-start">
+                            <div className="mt-6 flex items-center justify-start">
                                 <Button
                                     className="w-full"
                                     disabled={processing}
@@ -54,7 +51,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
                     )}
                 </Form>
 
-                <div className="space-x-1 text-center text-sm text-muted-foreground">
+                <div className="space-x-1 border-t pt-5 text-center text-[13px] text-muted-foreground">
                     <span>Or, return to</span>
                     <TextLink href={login()}>log in</TextLink>
                 </div>

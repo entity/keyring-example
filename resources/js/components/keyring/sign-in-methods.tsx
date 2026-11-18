@@ -18,9 +18,11 @@ import {
     ShieldCheck,
     Smartphone,
 } from 'lucide-react';
-import { useState } from 'react';
-import Heading from '@/components/heading';
+import { useRef, useState } from 'react';
+import ChangePassword from '@/components/keyring/change-password';
 import RecoveryCodesDialog from '@/components/keyring/recovery-codes-dialog';
+import RowIcon from '@/components/keyring/row-icon';
+import CodeInput from '@/components/code-input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -39,6 +41,13 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+    InsetCard,
+    InsetCardDescription,
+    InsetCardHeader,
+    InsetCardList,
+    InsetCardTitle,
+} from '@/components/ui/inset-card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
@@ -105,6 +114,7 @@ export default function SignInMethods({
     enrollable,
     hasSecondFactor,
     otherSessions,
+    mustChangePassword,
 }: {
     authenticators: AuthenticatorRow[];
     enrollable: string[];
@@ -112,12 +122,19 @@ export default function SignInMethods({
     hasSecondFactor: boolean;
     /** How many other sessions the account has, to offer signing them out. */
     otherSessions: number;
+    /** Held until the password changes, so its form stays open. */
+    mustChangePassword: boolean;
 }) {
     const [pending, setPending] = useState<Pending>(null);
+    const [changingPassword, setChangingPassword] = useState(false);
     const [recovery, setRecovery] = useState<Recovery>(null);
     const [busy, setBusy] = useState(false);
     const [signOutOthers, setSignOutOthers] = useState(false);
+    const openedDialog = useRef(false);
     const webauthn = supportsWebAuthn();
+    // Inertia keeps the page mounted when its props change, so the hold is
+    // read on every render and not only the first.
+    const showPasswordForm = mustChangePassword || changingPassword;
 
     // Someone else being signed in is often why a method is added or
     // removed, so the change can end the other sessions with it. Keyring
@@ -137,7 +154,18 @@ export default function SignInMethods({
         }
     }
 
+    // While the menu fades out, the dialog a choice opens appears under the
+    // pointer. Left alone, the menu would take focus back from the dialog
+    // (as the pointer "leaves" the item, and again to return it to the Add
+    // button), so neither happens once a dialog is on its way.
+    function keepFocus(event: React.PointerEvent) {
+        if (openedDialog.current) {
+            event.preventDefault();
+        }
+    }
+
     async function add(factor: string) {
+        openedDialog.current = !['passkey', 'security-key'].includes(factor);
         setBusy(true);
 
         if (factor === 'passkey' || factor === 'security-key') {
@@ -175,22 +203,41 @@ export default function SignInMethods({
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-start justify-between gap-4">
-                <Heading
-                    variant="small"
-                    title="Sign-in methods"
-                    description="Everything you can use to sign in. With a passkey, security key or authenticator app set up, signing in takes two factors. An emailed code adds a step, but it isn't a second factor."
-                />
+        <InsetCard aria-labelledby="sign-in-methods">
+            <InsetCardHeader>
+                <div>
+                    <InsetCardTitle id="sign-in-methods">
+                        Sign-in methods
+                    </InsetCardTitle>
+                    <InsetCardDescription>
+                        Everything you can use to sign in. With a passkey,
+                        security key or authenticator app set up, signing in
+                        takes two factors. An emailed code adds a step, but it
+                        isn't a second factor.
+                    </InsetCardDescription>
+                </div>
 
                 <DropdownMenu modal={false}>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" disabled={busy}>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="shrink-0 self-start"
+                            disabled={busy}
+                        >
                             {busy ? <Spinner /> : <Plus />}
                             Add
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent
+                        align="end"
+                        onCloseAutoFocus={(event) => {
+                            if (openedDialog.current) {
+                                openedDialog.current = false;
+                                event.preventDefault();
+                            }
+                        }}
+                    >
                         {enrollable
                             .filter((factor) => factor !== 'recovery')
                             .filter(
@@ -213,6 +260,7 @@ export default function SignInMethods({
                                     <DropdownMenuItem
                                         key={factor}
                                         onSelect={() => void add(factor)}
+                                        onPointerLeave={keepFocus}
                                     >
                                         <Icon />
                                         <span className="grid">
@@ -237,6 +285,7 @@ export default function SignInMethods({
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
                                         onSelect={() => void add('recovery')}
+                                        onPointerLeave={keepFocus}
                                     >
                                         <ShieldCheck />
                                         Recovery codes
@@ -245,17 +294,47 @@ export default function SignInMethods({
                             )}
                     </DropdownMenuContent>
                 </DropdownMenu>
-            </div>
+            </InsetCardHeader>
 
-            <ul className="divide-y rounded-lg border">
-                <li className="flex items-center gap-3 p-4">
-                    <KeyRound className="size-5 text-muted-foreground" />
-                    <div className="flex-1">
-                        <p className="text-sm font-medium">Password</p>
-                        <p className="text-xs text-muted-foreground">
-                            Change it below
-                        </p>
+            <InsetCardList aria-label="Sign-in methods">
+                <li className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                        <RowIcon icon={KeyRound} />
+                        <div className="flex-1">
+                            <p className="text-sm font-medium">Password</p>
+                            <p className="text-xs text-muted-foreground">
+                                What you sign in with first
+                            </p>
+                        </div>
+                        {!mustChangePassword && (
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                aria-expanded={showPasswordForm}
+                                aria-controls="change-password"
+                                onClick={() =>
+                                    setChangingPassword(!changingPassword)
+                                }
+                            >
+                                Change
+                            </Button>
+                        )}
                     </div>
+
+                    {showPasswordForm && (
+                        <div
+                            id="change-password"
+                            className="mt-4 max-w-sm sm:pl-11"
+                        >
+                            <ChangePassword
+                                onCancel={
+                                    mustChangePassword
+                                        ? undefined
+                                        : () => setChangingPassword(false)
+                                }
+                            />
+                        </div>
+                    )}
                 </li>
 
                 {authenticators.map((authenticator) => (
@@ -266,10 +345,10 @@ export default function SignInMethods({
                         onRegenerate={() => void add('recovery')}
                     />
                 ))}
-            </ul>
+            </InsetCardList>
 
             {otherSessions > 0 && (
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center gap-2.5 px-3 pt-1.5 pb-2">
                     <Checkbox
                         id="sign-out-others"
                         checked={signOutOthers}
@@ -300,7 +379,7 @@ export default function SignInMethods({
                     router.reload();
                 }}
             />
-        </div>
+        </InsetCard>
     );
 }
 
@@ -359,8 +438,8 @@ function AuthenticatorItem({
     }
 
     return (
-        <li className="flex items-center gap-3 p-4">
-            <Icon className="size-5 text-muted-foreground" />
+        <li className="flex items-center gap-3 px-4 py-3">
+            <RowIcon icon={Icon} />
 
             <div className="min-w-0 flex-1">
                 {renaming ? (
@@ -392,7 +471,7 @@ function AuthenticatorItem({
                             <Badge variant="secondary">Default</Badge>
                         )}
                         {authenticator.replace && (
-                            <Badge variant="destructive">Make a new set</Badge>
+                            <Badge variant="warning">Make a new set</Badge>
                         )}
                     </p>
                 )}
@@ -412,7 +491,7 @@ function AuthenticatorItem({
 
             <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="secondary" size="sm">
                         Manage
                     </Button>
                 </DropdownMenuTrigger>
@@ -519,6 +598,8 @@ function ConfirmCodeDialog({
     const [code, setCode] = useState('');
     const [processing, setProcessing] = useState(false);
     const isTotp = pending?.factor === 'totp';
+    // Keyring says how long an emailed code is; authenticator apps show six digits.
+    const codeLength = isTotp ? 6 : Number(pending?.enrollment.length ?? 8);
 
     return (
         <Dialog
@@ -542,13 +623,13 @@ function ConfirmCodeDialog({
                 {isTotp && pending && (
                     <div className="grid justify-items-center gap-3">
                         <div
-                            className="rounded-lg bg-white p-3"
+                            className="rounded-lg bg-white p-3 shadow-raised"
                             // The QR code is an SVG string Keyring renders on the server.
                             dangerouslySetInnerHTML={{
                                 __html: pending.enrollment.qr,
                             }}
                         />
-                        <code className="rounded bg-muted px-2 py-1 text-xs break-all">
+                        <code className="rounded-md bg-muted px-2 py-1 font-mono text-xs break-all">
                             {pending.enrollment.secret}
                         </code>
                     </div>
@@ -583,15 +664,13 @@ function ConfirmCodeDialog({
                     }}
                 >
                     <Label htmlFor="enroll-code">Code</Label>
-                    <Input
+                    <CodeInput
                         id="enroll-code"
+                        length={codeLength}
                         value={code}
-                        onChange={(event) => setCode(event.target.value)}
-                        inputMode="numeric"
-                        autoComplete="one-time-code"
-                        className="font-mono tracking-widest"
+                        onChange={setCode}
+                        className="mt-1"
                         autoFocus
-                        required
                     />
                 </form>
 
@@ -599,7 +678,7 @@ function ConfirmCodeDialog({
                     <Button
                         type="submit"
                         form="confirm-code"
-                        disabled={processing}
+                        disabled={processing || code.length !== codeLength}
                     >
                         {processing && <Spinner />}
                         Confirm

@@ -4,13 +4,16 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 const alertVariants = cva(
-  "relative w-full rounded-lg border px-4 py-3 text-sm grid has-[>svg]:grid-cols-[calc(var(--spacing)*4)_1fr] grid-cols-[0_1fr] has-[>svg]:gap-x-3 gap-y-0.5 items-start [&>svg]:size-4 [&>svg]:translate-y-0.5 [&>svg]:text-current",
+  "relative w-full rounded-xl px-4 py-3 text-sm grid has-[>svg]:grid-cols-[calc(var(--spacing)*4)_1fr] grid-cols-[0_1fr] has-[>svg]:gap-x-3 gap-y-0.5 items-start inset-ring [&>svg]:size-4 [&>svg]:translate-y-0.5 [&>svg]:text-current",
   {
     variants: {
       variant: {
-        default: "bg-background text-foreground",
+        default:
+          "bg-tint text-foreground inset-ring-border [&>svg]:text-muted-foreground",
+        warning:
+          "bg-amber-50 text-amber-900 inset-ring-amber-600/20 [&>svg]:text-amber-600 *:data-[slot=alert-description]:text-amber-900/80 dark:bg-amber-400/8 dark:text-amber-200 dark:inset-ring-amber-400/20 dark:[&>svg]:text-amber-300 dark:*:data-[slot=alert-description]:text-amber-200/80",
         destructive:
-          "text-destructive-foreground [&>svg]:text-current *:data-[slot=alert-description]:text-destructive-foreground/80",
+          "bg-red-50 text-red-900 inset-ring-red-600/15 [&>svg]:text-red-600 *:data-[slot=alert-description]:text-red-900/80 dark:bg-red-400/8 dark:text-red-200 dark:inset-ring-red-400/20 dark:[&>svg]:text-red-300 dark:*:data-[slot=alert-description]:text-red-200/80",
       },
     },
     defaultVariants: {
