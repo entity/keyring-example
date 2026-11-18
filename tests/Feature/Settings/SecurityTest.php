@@ -9,6 +9,7 @@ use Illuminate\Session\ArraySessionHandler;
 use Illuminate\Session\Store;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Testing\AssertableInertia as Assert;
+use Keyring\Activity\SecurityLog;
 use Keyring\Enums\Assurance;
 use Keyring\Facades\Keyring;
 use Keyring\Models\Authenticator;
@@ -70,6 +71,33 @@ class SecurityTest extends TestCase
                 ->where('sessions.1.ip', '203.0.113.7')
                 // A handle for DELETE /user/sessions/{id}, never the record's own ID.
                 ->where('sessions.1.id', fn (string $handle) => $handle !== $elsewhere->id && strlen($handle) === 64));
+    }
+
+    /**
+     * Each entry says what it can: the factors a sign in used, the device or
+     * browser, and the details Keyring logged with it. Nothing else from
+     * its meta is passed on.
+     */
+    public function test_recent_activity_says_how_and_where()
+    {
+        $user = User::factory()->create();
+
+        $this->withServerVariables(['HTTP_USER_AGENT' => 'Mozilla/5.0 (Windows NT 10.0; rv:130.0) Gecko/20100101 Firefox/130.0'])
+            ->post(route('login.store'), ['email' => $user->email, 'password' => 'password']);
+        $this->post(route('logout'));
+        $this->travel(1)->minute();
+        app(SecurityLog::class)->record('session_ended', $user, meta: ['reason' => 'idle', 'unlisted' => 'x']);
+
+        $this->actingAs($user)->withAssurance(Assurance::AAL2)
+            ->get(route('security.edit'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('activity.0.type', 'session_ended')
+                ->where('activity.0.meta', ['reason' => 'idle'])
+                ->where('activity', fn ($activity) => collect($activity)->contains(fn (array $event) => $event['type'] === 'signed_in'
+                    && $event['meta'] === ['factors' => ['password']]
+                    && $event['device'] === 'Firefox on Windows'))
+                ->where('activity', fn ($activity) => collect($activity)->contains(fn (array $event) => $event['type'] === 'new_device'
+                    && $event['device'] === 'Firefox on Windows')));
     }
 
     public function test_one_session_can_be_ended_by_its_handle()

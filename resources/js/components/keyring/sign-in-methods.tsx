@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
+import ChangePassword from '@/components/keyring/change-password';
 import RecoveryCodesDialog from '@/components/keyring/recovery-codes-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -105,6 +106,7 @@ export default function SignInMethods({
     enrollable,
     hasSecondFactor,
     otherSessions,
+    mustChangePassword,
 }: {
     authenticators: AuthenticatorRow[];
     enrollable: string[];
@@ -112,8 +114,12 @@ export default function SignInMethods({
     hasSecondFactor: boolean;
     /** How many other sessions the account has, to offer signing them out. */
     otherSessions: number;
+    /** Held until the password changes, so its form starts open. */
+    mustChangePassword: boolean;
 }) {
     const [pending, setPending] = useState<Pending>(null);
+    const [changingPassword, setChangingPassword] =
+        useState(mustChangePassword);
     const [recovery, setRecovery] = useState<Recovery>(null);
     const [busy, setBusy] = useState(false);
     const [signOutOthers, setSignOutOthers] = useState(false);
@@ -248,14 +254,41 @@ export default function SignInMethods({
             </div>
 
             <ul className="divide-y rounded-lg border">
-                <li className="flex items-center gap-3 p-4">
-                    <KeyRound className="size-5 text-muted-foreground" />
-                    <div className="flex-1">
-                        <p className="text-sm font-medium">Password</p>
-                        <p className="text-xs text-muted-foreground">
-                            Change it below
-                        </p>
+                <li className="p-4">
+                    <div className="flex items-center gap-3">
+                        <KeyRound className="size-5 shrink-0 text-muted-foreground" />
+                        <div className="flex-1">
+                            <p className="text-sm font-medium">Password</p>
+                            <p className="text-xs text-muted-foreground">
+                                What you sign in with first
+                            </p>
+                        </div>
+                        {!mustChangePassword && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                aria-expanded={changingPassword}
+                                aria-controls="change-password"
+                                onClick={() =>
+                                    setChangingPassword(!changingPassword)
+                                }
+                            >
+                                Change
+                            </Button>
+                        )}
                     </div>
+
+                    {changingPassword && (
+                        <div id="change-password" className="mt-4 sm:pl-8">
+                            <ChangePassword
+                                onCancel={
+                                    mustChangePassword
+                                        ? undefined
+                                        : () => setChangingPassword(false)
+                                }
+                            />
+                        </div>
+                    )}
                 </li>
 
                 {authenticators.map((authenticator) => (

@@ -1,21 +1,17 @@
 import type { Session } from '@entity/keyring/react';
-import { Form, Head, usePage } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { KeyRound, ShieldAlert } from 'lucide-react';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
-import Heading from '@/components/heading';
-import InputError from '@/components/input-error';
 import Activity, { type ActivityRow } from '@/components/keyring/activity';
-import Devices, { type DeviceRow } from '@/components/keyring/devices';
-import Sessions from '@/components/keyring/sessions';
+import { type DeviceRow } from '@/components/keyring/devices';
 import SignInMethods, {
     type AuthenticatorRow,
 } from '@/components/keyring/sign-in-methods';
-import PasswordInput from '@/components/password-input';
+import SignedIn from '@/components/keyring/signed-in';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import { edit } from '@/routes/security';
 
 type Props = {
@@ -86,7 +82,8 @@ export default function Security({
                     <AlertTitle>Choose a new password to carry on</AlertTitle>
                     <AlertDescription>
                         Your password may be known to someone else, so the rest
-                        of the app is closed until you change it below.
+                        of the app is closed until you change it below, under
+                        Password.
                     </AlertDescription>
                 </Alert>
             )}
@@ -111,71 +108,14 @@ export default function Security({
                 otherSessions={
                     sessions.filter((session) => !session.current).length
                 }
+                mustChangePassword={mustChangePassword}
             />
 
-            <div className="space-y-6">
-                <Heading
-                    variant="small"
-                    title="Change password"
-                    description="Use at least 15 characters, or 8 once you have a second factor. Your other sessions are signed out."
-                />
+            <Separator />
 
-                <Form
-                    action="/user/password"
-                    method="put"
-                    options={{ preserveScroll: true }}
-                    resetOnSuccess
-                    resetOnError={[
-                        'password',
-                        'password_confirmation',
-                        'current_password',
-                    ]}
-                    className="space-y-6"
-                >
-                    {({ errors, processing }) => (
-                        <>
-                            <div className="grid gap-2">
-                                <Label htmlFor="current_password">
-                                    Current password
-                                </Label>
-                                <PasswordInput
-                                    id="current_password"
-                                    name="current_password"
-                                    autoComplete="current-password"
-                                />
-                                <InputError message={errors.current_password} />
-                            </div>
+            <SignedIn devices={devices} sessions={sessions} />
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="password">New password</Label>
-                                <PasswordInput
-                                    id="password"
-                                    name="password"
-                                    autoComplete="new-password"
-                                />
-                                <InputError message={errors.password} />
-                            </div>
-
-                            <div className="grid gap-2">
-                                <Label htmlFor="password_confirmation">
-                                    Confirm new password
-                                </Label>
-                                <PasswordInput
-                                    id="password_confirmation"
-                                    name="password_confirmation"
-                                    autoComplete="new-password"
-                                />
-                            </div>
-
-                            <Button disabled={processing}>Save</Button>
-                        </>
-                    )}
-                </Form>
-            </div>
-
-            <Devices devices={devices} />
-
-            <Sessions sessions={sessions} />
+            <Separator />
 
             <Activity activity={activity} />
         </>

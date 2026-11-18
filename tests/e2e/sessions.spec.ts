@@ -145,7 +145,7 @@ test('"sign out my other sessions" ends them all, and ending this one signs out'
 
     await page.goto('/settings/security');
     await page
-        .getByRole('button', { name: 'Sign out my other sessions' })
+        .getByRole('button', { name: 'Sign out everywhere else' })
         .click();
 
     await expect(

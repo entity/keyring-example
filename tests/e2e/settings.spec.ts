@@ -36,6 +36,8 @@ test('a wrong current password stays on the security page', async ({
     await page.getByRole('link', { name: 'Security' }).click();
     await expect(page).toHaveURL(/\/settings\/security/);
 
+    // The form opens from the password's row among the sign-in methods.
+    await page.getByRole('button', { name: 'Change', exact: true }).click();
     await page.getByLabel('Current password').fill('not the password');
     await page
         .getByLabel('New password', { exact: true })

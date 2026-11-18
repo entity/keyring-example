@@ -1,59 +1,238 @@
+import {
+    KeyRound,
+    LogIn,
+    LogOut,
+    Mail,
+    ShieldAlert,
+    type LucideIcon,
+} from 'lucide-react';
 import Heading from '@/components/heading';
 import { ago } from '@/components/keyring/sign-in-methods';
 import { Badge } from '@/components/ui/badge';
+import { factorList, factorName, fullDate } from '@/keyring/format';
 
 export type ActivityRow = {
     id: string;
     type: string;
     severity: 'info' | 'notice' | 'warning' | 'critical';
     factor: string | null;
+    /** The parts of the entry's meta the page shows (SecurityController). */
+    meta: {
+        factors?: string[];
+        name?: string;
+        count?: number;
+        remaining?: number;
+        reason?: string;
+        reasons?: string[];
+        resource?: string;
+        link?: string;
+    };
+    /** The device the entry names, or the browser it came from. */
+    device: string | null;
     ip: string | null;
     at: string;
 };
 
-/**
- * Every entry type Keyring writes about a user. "Entry Types" in Keyring's
- * docs lists them, with what each means.
- */
-const labels: Record<string, string> = {
-    signed_in: 'Signed in',
-    signed_out: 'Signed out',
-    confirmed: 'Confirmed it was you',
-    new_device: 'Signed in from a new device',
-    factor_failed: 'Wrong password or code',
-    second_factor_failed: 'Right password, wrong second step',
-    locked_out: 'Too many attempts, sign in paused',
-    account_locked: 'Account locked until the password is reset',
-    authenticator_added: 'Added a sign-in method',
-    authenticator_removed: 'Removed a sign-in method',
-    authenticator_removal_refused:
-        'Kept a sign-in method that couldn’t be removed',
-    enrollment_refused: 'Couldn’t add a sign-in method',
-    recovery_codes_generated: 'Made new recovery codes',
-    recovery_code_used: 'Used a recovery code',
-    password_changed: 'Changed password',
-    password_reset: 'Reset password',
-    email_change_requested: 'Asked to change email',
-    email_changed: 'Changed email',
-    email_change_reverted: 'Undid an email change',
-    device_revoked: 'Signed out a device',
-    device_reported: 'Signed out a device from a “this wasn’t me” link',
-    sessions_revoked: 'Signed out other sessions',
-    session_ended: 'A session was ended',
-    remember_me_reused: 'A “remember me” cookie was used twice, session ended',
-    access_refused: 'Asked for something that isn’t this account’s',
-    link_refused: 'An emailed link was refused',
-    verification_refused: 'A sign in was refused by a safeguard',
-    refusals_limited: 'More refusals followed and weren’t listed',
-    protection_bypassed: 'Changed a protected detail outside the usual flow',
-    clone_suspected: 'A security key looked cloned',
-    risk_step_up: 'Something looked unusual, asked for another step',
-    risk_reauthenticate: 'Something looked unusual, signed out',
-    risk_notified: 'Something looked unusual, sent an email',
-    risk_denied: 'Something looked unusual, sign in refused',
-    risk_locked: 'Something looked unusual, sign in paused',
-    risk_revoked_sessions: 'Something looked unusual, signed out everywhere',
+type Described = { title: string; detail?: string | null };
+
+const plural = (count: number, one: string, many: string) =>
+    `${count} ${count === 1 ? one : many}`;
+
+// Why Keyring ended a session on its own (session_ended).
+const endedBecause: Record<string, string> = {
+    revoked: 'It was signed out from somewhere else.',
+    expired: 'It reached its time limit.',
+    idle: 'It went unused for too long.',
+    other_user: 'Another account signed in on that browser.',
+    reused: 'Its cookie turned up in two browsers.',
+    risk: 'Something about it looked wrong.',
+    not_allowed: 'The account isn’t allowed in.',
 };
+
+// Why an emailed link was refused (link_refused).
+const linkRefusedBecause: Record<string, string> = {
+    token: 'It wasn’t a link we sent.',
+    ended: 'What it was for is already over.',
+    unknown: 'There’s nothing it could be for.',
+    signature: 'It had been changed.',
+    expired: 'It had run out.',
+};
+
+// What a risk response did (risk_*). The reasons say what was found.
+const riskDid: Record<string, string> = {
+    risk_step_up: 'asked for another step',
+    risk_reauthenticate: 'signed the session out',
+    risk_notified: 'sent you an email',
+    risk_denied: 'refused the sign in',
+    risk_locked: 'paused signing in',
+    risk_revoked_sessions: 'signed out every session',
+    risk_password_change: 'asked for a new password',
+};
+
+/**
+ * Every entry type Keyring writes about a user, in words. "Entry Types" in
+ * Keyring's docs lists them, with what each one's meta holds.
+ */
+function describe(event: ActivityRow): Described {
+    const { meta } = event;
+    const factor = event.factor ? factorName(event.factor) : null;
+    const used = meta.factors?.length
+        ? `With your ${factorList(meta.factors)}.`
+        : null;
+
+    if (event.type in riskDid) {
+        return {
+            title: `Something looked unusual, so Keyring ${riskDid[event.type]}`,
+            detail: meta.reasons?.join(' '),
+        };
+    }
+
+    switch (event.type) {
+        case 'signed_in':
+            return { title: 'Signed in', detail: used };
+        case 'confirmed':
+            return { title: 'Confirmed it was you', detail: used };
+        case 'session_resumed':
+            return {
+                title: 'Signed back in with “Remember me”',
+                detail: 'Nothing was asked for, so the session starts with nothing proved.',
+            };
+        case 'signed_out':
+            return { title: 'Signed out' };
+        case 'new_device':
+            return { title: 'Signed in from a new device' };
+        case 'factor_failed':
+            return { title: factor ? `Wrong ${factor}` : 'A sign in failed' };
+        case 'second_factor_failed':
+            return {
+                title: `Right password, wrong ${factor ?? 'second step'}`,
+                detail: 'Someone who knows the password tried to sign in.',
+            };
+        case 'locked_out':
+            return { title: 'Too many attempts, so signing in was paused' };
+        case 'rate_limited':
+            return { title: 'Too many requests, so they were paused' };
+        case 'account_locked':
+            return {
+                title: 'Signing in locked until the password is reset',
+                detail: 'Too many failed attempts in a row.',
+            };
+        case 'authenticator_added':
+            return { title: 'Added a sign-in method', detail: meta.name };
+        case 'authenticator_removed':
+            return { title: 'Removed a sign-in method', detail: meta.name };
+        case 'authenticator_removal_refused':
+            return {
+                title: 'Kept a sign-in method you still need',
+                detail: meta.name,
+            };
+        case 'enrollment_refused':
+            return {
+                title: factor
+                    ? `Couldn’t add the ${factor}`
+                    : 'Couldn’t add a sign-in method',
+                detail:
+                    meta.reason === 'not_allowed'
+                        ? 'This account can’t add one yet.'
+                        : 'The code or key wasn’t accepted.',
+            };
+        case 'recovery_codes_generated':
+            return { title: 'Made new recovery codes' };
+        case 'recovery_code_used':
+            return {
+                title: 'Used a recovery code',
+                detail:
+                    meta.remaining === undefined
+                        ? null
+                        : `${plural(meta.remaining, 'code', 'codes')} left.`,
+            };
+        case 'password_changed':
+            return { title: 'Changed the password' };
+        case 'password_reset':
+            return { title: 'Reset the password' };
+        case 'email_change_requested':
+            return {
+                title: 'Asked to change the email address',
+                detail: 'It changes once the new address confirms.',
+            };
+        case 'email_changed':
+            return { title: 'Changed the email address' };
+        case 'email_change_reverted':
+            return {
+                title: 'Undid a change to the email address',
+                detail: 'From the link sent to the old address.',
+            };
+        case 'device_revoked':
+            return { title: 'Signed out a device' };
+        case 'device_reported':
+            return {
+                title: 'Signed out a device from a “this wasn’t me” link',
+            };
+        case 'sessions_revoked':
+            return {
+                title: 'Signed out other sessions',
+                detail:
+                    meta.count === undefined
+                        ? null
+                        : `${plural(meta.count, 'session', 'sessions')} ended.`,
+            };
+        case 'session_ended':
+            return {
+                title: 'A session was ended',
+                detail: endedBecause[meta.reason ?? ''],
+            };
+        case 'remember_me_reused':
+            return {
+                title: 'A “remember me” cookie was used twice',
+                detail: 'The session ended in both browsers.',
+            };
+        case 'access_refused':
+            return {
+                title: `Asked for ${meta.resource ? `a ${meta.resource.replace('_', ' ')}` : 'something'} that isn’t this account’s`,
+            };
+        case 'link_refused':
+            return {
+                title: 'An emailed link was refused',
+                detail: linkRefusedBecause[meta.reason ?? ''],
+            };
+        case 'verification_refused':
+            return { title: 'A sign in was refused by a safeguard' };
+        case 'refusals_limited':
+            return { title: 'More refusals followed, and weren’t listed' };
+        case 'protection_bypassed':
+            return {
+                title: 'A protected detail was changed outside the usual flow',
+                detail: meta.reason,
+            };
+        case 'clone_suspected':
+            return {
+                title: 'A security key looked like a copy',
+                detail: meta.name,
+            };
+        default:
+            return { title: event.type.replaceAll('_', ' ') };
+    }
+}
+
+function iconFor(type: string): LucideIcon {
+    if (/^(signed_in|confirmed|session_resumed|new_device)$/.test(type)) {
+        return LogIn;
+    }
+
+    if (/^(signed_out|session_ended|sessions_revoked|device_)/.test(type)) {
+        return LogOut;
+    }
+
+    if (type.startsWith('email_')) {
+        return Mail;
+    }
+
+    if (/^(authenticator_|recovery_|password_)/.test(type)) {
+        return KeyRound;
+    }
+
+    return ShieldAlert;
+}
 
 /** How each of Keyring's four severities is shown. Info has no badge. */
 const severities: Record<
@@ -74,39 +253,58 @@ export default function Activity({ activity }: { activity: ActivityRow[] }) {
             <Heading
                 variant="small"
                 title="Recent activity"
-                description="Sign-ins, security changes and anything that was refused on your account. Entries are kept for 180 days."
+                description="Sign ins, security changes and anything that was refused on your account. Entries are kept for 180 days."
             />
 
-            <ul className="divide-y rounded-lg border text-sm">
-                {activity.map((event) => (
-                    <li
-                        key={event.id}
-                        className="flex items-baseline justify-between gap-4 px-4 py-3"
-                    >
-                        <span>
-                            {labels[event.type] ?? event.type}
-                            {event.factor && (
-                                <span className="text-muted-foreground">
-                                    {' '}
-                                    · {event.factor}
-                                </span>
-                            )}
-                            {severities[event.severity] && (
-                                <Badge
-                                    variant={severities[event.severity].variant}
-                                    className="ml-2"
-                                >
-                                    {severities[event.severity].label}
-                                </Badge>
-                            )}
-                        </span>
-                        <span className="shrink-0 text-xs text-muted-foreground">
-                            {event.ip} · {ago(event.at)}
-                        </span>
-                    </li>
-                ))}
+            <ul className="divide-y rounded-lg border">
+                {activity.map((event) => {
+                    const { title, detail } = describe(event);
+                    const Icon = iconFor(event.type);
+                    const severity = severities[event.severity];
+                    const where = [event.device, event.ip]
+                        .filter(Boolean)
+                        .join(' · ');
+
+                    return (
+                        <li key={event.id} className="flex gap-3 px-4 py-3">
+                            <Icon
+                                className={
+                                    event.severity === 'warning' ||
+                                    event.severity === 'critical'
+                                        ? 'mt-0.5 size-4 shrink-0 text-destructive'
+                                        : 'mt-0.5 size-4 shrink-0 text-muted-foreground'
+                                }
+                                aria-hidden="true"
+                            />
+                            <div className="min-w-0 flex-1 space-y-0.5">
+                                <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium">
+                                    {title}
+                                    {severity && (
+                                        <Badge variant={severity.variant}>
+                                            {severity.label}
+                                        </Badge>
+                                    )}
+                                </p>
+                                {detail && (
+                                    <p className="text-sm text-muted-foreground">
+                                        {detail}
+                                    </p>
+                                )}
+                                <p className="text-xs text-muted-foreground">
+                                    {where && `${where} · `}
+                                    <time
+                                        dateTime={event.at}
+                                        title={fullDate(event.at)}
+                                    >
+                                        {ago(event.at)}
+                                    </time>
+                                </p>
+                            </div>
+                        </li>
+                    );
+                })}
                 {activity.length === 0 && (
-                    <li className="px-4 py-3 text-muted-foreground">
+                    <li className="px-4 py-3 text-sm text-muted-foreground">
                         Nothing yet.
                     </li>
                 )}
