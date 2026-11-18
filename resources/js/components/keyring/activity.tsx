@@ -25,7 +25,6 @@ export type ActivityRow = {
         reason?: string;
         reasons?: string[];
         resource?: string;
-        link?: string;
     };
     /** The device the entry names, or the browser it came from. */
     device: string | null;
@@ -56,6 +55,16 @@ const linkRefusedBecause: Record<string, string> = {
     unknown: 'There’s nothing it could be for.',
     signature: 'It had been changed.',
     expired: 'It had run out.',
+};
+
+// What an access_refused entry was about: something that isn't this
+// account's (or doesn't exist), or another account's verification link.
+const refusedAccess: Record<string, string> = {
+    authenticator: 'Asked for a sign-in method that isn’t this account’s',
+    device: 'Asked for a device that isn’t this account’s',
+    session: 'Asked for a session that isn’t this account’s',
+    email_verification:
+        'Opened an email verification link meant for another account',
 };
 
 // What a risk response did (risk_*). The reasons say what was found.
@@ -162,11 +171,14 @@ function describe(event: ActivityRow): Described {
                 title: 'Undid a change to the email address',
                 detail: 'From the link sent to the old address.',
             };
+        // These name the device that was signed out, not the one that
+        // signed it out, so the device goes here and not beside the IP.
         case 'device_revoked':
-            return { title: 'Signed out a device' };
+            return { title: 'Signed out a device', detail: event.device };
         case 'device_reported':
             return {
                 title: 'Signed out a device from a “this wasn’t me” link',
+                detail: event.device,
             };
         case 'sessions_revoked':
             return {
@@ -188,7 +200,9 @@ function describe(event: ActivityRow): Described {
             };
         case 'access_refused':
             return {
-                title: `Asked for ${meta.resource ? `a ${meta.resource.replace('_', ' ')}` : 'something'} that isn’t this account’s`,
+                title:
+                    refusedAccess[meta.resource ?? ''] ??
+                    'Asked for something that isn’t this account’s',
             };
         case 'link_refused':
             return {
@@ -212,6 +226,14 @@ function describe(event: ActivityRow): Described {
         default:
             return { title: event.type.replaceAll('_', ' ') };
     }
+}
+
+/**
+ * Entries whose device is the one they're about (shown as the detail), so
+ * the IP beside it is where the request came from, not that device's.
+ */
+function namesDevice(type: string): boolean {
+    return type === 'device_revoked' || type === 'device_reported';
 }
 
 function iconFor(type: string): LucideIcon {
@@ -261,9 +283,9 @@ export default function Activity({ activity }: { activity: ActivityRow[] }) {
                     const { title, detail } = describe(event);
                     const Icon = iconFor(event.type);
                     const severity = severities[event.severity];
-                    const where = [event.device, event.ip]
-                        .filter(Boolean)
-                        .join(' · ');
+                    const where = namesDevice(event.type)
+                        ? event.ip && `From ${event.ip}`
+                        : [event.device, event.ip].filter(Boolean).join(' · ');
 
                     return (
                         <li key={event.id} className="flex gap-3 px-4 py-3">

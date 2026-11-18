@@ -52,7 +52,7 @@ class SecurityController extends Controller
                 // What each entry has to say for itself ("Entry Types" in
                 // Keyring's docs): the factors a sign in used, the method
                 // that was added, why a session ended, what risk found...
-                'meta' => Arr::only($event->meta ?? [], ['factors', 'name', 'count', 'remaining', 'reason', 'reasons', 'resource', 'link']),
+                'meta' => Arr::only($event->meta ?? [], ['factors', 'name', 'count', 'remaining', 'reason', 'reasons', 'resource']),
                 // Some entries name the device. The rest have the browser
                 // they came from.
                 'device' => $event->meta['device'] ?? Keyring::describeDevice($event->user_agent),
