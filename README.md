@@ -84,45 +84,51 @@ Only the first five characters of the password's SHA-1 leave the server.
 
 ## Emails
 
-Keyring writes no emails of its own. `keyring:install` publishes one notification class per email into `app/Notifications/Keyring`, and `App\Providers\KeyringServiceProvider` says which are sent. This app builds them with [Maizzle](https://maizzle.com):
+Keyring sends its own emails, and this app gives every one of them its look with [Maizzle](https://maizzle.com): the twelve security notices, the five emails a flow needs, and Laravel's own verification and password reset emails.
 
 ```
 resources/emails/
-├── components/Shell.vue          # the frame every email shares
+├── components/               # the design: Shell (logo, card, footer), Hero, Details,
+│                             # Action (Outlook-safe button), Callout, tones.ts...
+├── images.mjs                # draws the logo and icons into public/images/emails
 └── keyring/
-    ├── notice.vue                # all twelve security notices
+    ├── notice.vue            # all twelve security notices
     ├── verification-code.vue
     ├── confirm-email-change.vue
     ├── email-change-notice.vue
     ├── email-address-in-use.vue
-    └── already-registered.vue
+    ├── already-registered.vue
+    ├── verify-email.vue      # Laravel's VerifyEmail
+    └── reset-password.vue    # Laravel's ResetPassword
 ```
 
 ```bash
-npm run emails        # build them into resources/views/emails/keyring
-npm run emails:dev    # Maizzle's preview server, with hot reload
+npm run emails         # build them into resources/views/emails/keyring
+npm run emails:dev     # Maizzle's preview server, with hot reload
+npm run emails:images  # redraw the logo and icons after changing the list
 ```
 
 The templates are Vue files with Tailwind classes. Maizzle inlines the CSS and writes each one out as two Blade views, HTML and plain text, which are committed so the app runs without a build. Anything that changes per email is a Blade variable wrapped in `<Raw>`, which Maizzle passes through untouched:
 
 ```vue
-<Heading class="text-2xl font-semibold"><Raw>{{ $subject }}</Raw></Heading>
+<Lead><Raw>{{ $intro }}</Raw></Lead>
 ```
 
-Keyring sends the security notices itself, so the app only gives them their look. One callback in `KeyringServiceProvider` builds every notice from the one template:
+Every email has the same frame: the logo, a card with an icon and a coloured bar in the email's tone, and a footer saying why it was sent and, for the security emails, who to contact if it wasn't you. Alerts (a new device, unusual activity, a failed second step, a locked account, a copied key) are red or amber, confirmations (a new password, a sign-in method added, a changed email address) green, and the rest indigo. Codes get a large code block, and links a button with the full link under it for mail apps that won't open it. Dark mode follows `prefers-color-scheme` where the mail app supports it. The logo and icons are PNGs, since many mail apps won't show an SVG.
+
+Keyring sends the security notices itself, so the app only gives them their look. One callback in `KeyringServiceProvider` builds every notice from `notice.vue`, and `App\Notifications\Keyring\NoticeMail` picks each notice's tone, icon, label, details (the key's name, the recovery codes left, what the risk signals noticed) and advice:
 
 ```php
-SecurityNotice::toMailUsing(fn (SecurityNotice $notice, object $notifiable) => (new MailMessage)
-    ->subject($notice->subject())
-    ->view(
-        ['html' => 'emails.keyring.notice', 'text' => 'emails.keyring.text.notice'],
-        ['subject' => $notice->subject(), 'intro' => $notice->intro(), /* ... */],
-    ));
+SecurityNotice::toMailUsing(Notifications\NoticeMail::build(...));
+VerifyEmail::toMailUsing(Notifications\LaravelMail::verifyEmail(...));
+ResetPassword::toMailUsing(Notifications\LaravelMail::resetPassword(...));
 ```
 
 The five emails a flow needs (the emailed code, the two for an email change, and the two that answer an address that's already taken) each have their own template, so they're the app's own classes in `app/Notifications/Keyring`, registered with `Keyring::notifications()`.
 
-Blade escapes what the HTML views print, so a name someone typed for their security key can't add a link to a genuine security email.
+Blade escapes what the HTML views print, so a name someone typed for their security key can't add a link to a genuine security email. The plain text views print values as they are, since there's no markup to protect.
+
+While developing, [`/emails`](http://localhost:8000/emails) shows a gallery of every email with sample content, `/emails/{type}` one of them and `/emails/{type}/text` its plain text. The pages only exist when `APP_ENV` is `local`.
 
 ## Demo accounts
 
