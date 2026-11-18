@@ -1,4 +1,4 @@
-import { usePasskeyLogin } from '@entity/keyring/react';
+import { usePasskeyLogin } from '@keyringjs/keyring/react';
 import { Form, Head } from '@inertiajs/react';
 import { KeyRound } from 'lucide-react';
 import { useState } from 'react';

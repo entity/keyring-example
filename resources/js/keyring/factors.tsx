@@ -1,4 +1,4 @@
-import type { Challenge, FactorComponent } from '@entity/keyring/react';
+import type { Challenge, FactorComponent } from '@keyringjs/keyring/react';
 import { useEffect, useRef } from 'react';
 import CodeInput from '@/components/code-input';
 import InputError from '@/components/input-error';

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "708e8f379f23a22d0ddfb2e47e80e9da",
+    "content-hash": "a62f67bd47c6081e0e9966a93f17a7ae",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -665,104 +665,6 @@
             "time": "2025-03-06T22:45:56+00:00"
         },
         {
-            "name": "entity/keyring",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "../keyring",
-                "reference": "639d3059efe34e1daea49ad13b52415c5ee7dd58"
-            },
-            "require": {
-                "bacon/bacon-qr-code": "^3.0",
-                "laravel/framework": "^13.31",
-                "paragonie/constant_time_encoding": "^3.0",
-                "php": "^8.5",
-                "pragmarx/google2fa": "^9.0",
-                "spomky-labs/cbor-php": "^3.4",
-                "spomky-labs/pki-framework": "^1.6.2",
-                "symfony/polyfill-intl-normalizer": "^1.31",
-                "symfony/serializer": "^6.4|^7.0|^8.0",
-                "web-auth/cose-lib": "^4.8",
-                "web-auth/webauthn-lib": "^5.3.10"
-            },
-            "require-dev": {
-                "calebdw/phpstan-laravel": "^1.12",
-                "driftingly/rector-laravel": "^2.7",
-                "inertiajs/inertia-laravel": "^3.7",
-                "laravel/pint": "^1.32",
-                "orchestra/testbench": "^11.0",
-                "pestphp/pest": "^5.3",
-                "pestphp/pest-plugin-laravel": "^5.0",
-                "rector/rector": "^2.8"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "Keyring\\KeyringServiceProvider"
-                    ],
-                    "aliases": {
-                        "Keyring": "Keyring\\Facades\\Keyring"
-                    }
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Keyring\\": "src/",
-                    "Keyring\\Database\\Factories\\": "database/factories/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "Keyring\\Tests\\": "tests/",
-                    "App\\": "stubs/app/"
-                },
-                "files": [
-                    "tests/Helpers.php",
-                    "tests/Concurrency/Helpers.php"
-                ]
-            },
-            "scripts": {
-                "test": [
-                    "pest"
-                ],
-                "lint": [
-                    "pint"
-                ],
-                "refactor": [
-                    "rector"
-                ],
-                "analyse": [
-                    "phpstan analyse",
-                    "phpstan analyse -c phpstan.stubs.neon"
-                ],
-                "check": [
-                    "rector --dry-run",
-                    "pint --test",
-                    "phpstan analyse",
-                    "phpstan analyse -c phpstan.stubs.neon",
-                    "pest"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "Factor-driven authentication for Laravel: many authenticators per user, devices, sessions, step-up and risk.",
-            "keywords": [
-                "2fa",
-                "auth",
-                "laravel",
-                "mfa",
-                "passkeys",
-                "totp",
-                "webauthn"
-            ],
-            "transport-options": {
-                "symlink": true,
-                "relative": true
-            }
-        },
-        {
             "name": "fruitcake/php-cors",
             "version": "v1.4.0",
             "source": {
@@ -1381,6 +1283,80 @@
                 "source": "https://github.com/inertiajs/inertia-laravel/tree/v3.7.0"
             },
             "time": "2026-11-02T10:29:10+00:00"
+        },
+        {
+            "name": "keyring/keyring",
+            "version": "v0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/entity/keyring.git",
+                "reference": "1a891b915b41d0bf1f6d638ebd2601602dc729cd"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/entity/keyring/zipball/1a891b915b41d0bf1f6d638ebd2601602dc729cd",
+                "reference": "1a891b915b41d0bf1f6d638ebd2601602dc729cd",
+                "shasum": ""
+            },
+            "require": {
+                "bacon/bacon-qr-code": "^3.0",
+                "laravel/framework": "^13.31",
+                "paragonie/constant_time_encoding": "^3.0",
+                "php": "^8.5",
+                "pragmarx/google2fa": "^9.0",
+                "spomky-labs/cbor-php": "^3.4",
+                "spomky-labs/pki-framework": "^1.6.2",
+                "symfony/polyfill-intl-normalizer": "^1.31",
+                "symfony/serializer": "^6.4|^7.0|^8.0",
+                "web-auth/cose-lib": "^4.8",
+                "web-auth/webauthn-lib": "^5.3.10"
+            },
+            "require-dev": {
+                "calebdw/phpstan-laravel": "^1.12",
+                "driftingly/rector-laravel": "^2.7",
+                "inertiajs/inertia-laravel": "^3.7",
+                "laravel/pint": "^1.32",
+                "orchestra/testbench": "^11.0",
+                "pestphp/pest": "^5.3",
+                "pestphp/pest-plugin-laravel": "^5.0",
+                "rector/rector": "^2.8"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "Keyring": "Keyring\\Facades\\Keyring"
+                    },
+                    "providers": [
+                        "Keyring\\KeyringServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Keyring\\": "src/",
+                    "Keyring\\Database\\Factories\\": "database/factories/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Factor-driven authentication for Laravel: many authenticators per user, devices, sessions, step-up and risk.",
+            "keywords": [
+                "2fa",
+                "MFA",
+                "auth",
+                "laravel",
+                "passkeys",
+                "totp",
+                "webauthn"
+            ],
+            "support": {
+                "issues": "https://github.com/entity/keyring/issues",
+                "source": "https://github.com/entity/keyring/tree/v0.1.0"
+            },
+            "time": "2026-11-18T16:45:53+00:00"
         },
         {
             "name": "laminas/laminas-diactoros",
@@ -10642,9 +10618,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "entity/keyring": 20
-    },
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

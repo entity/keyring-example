@@ -2,7 +2,7 @@ import {
     errorMessage,
     isAbort,
     KeyringRequestError,
-} from '@entity/keyring/react';
+} from '@keyringjs/keyring/react';
 import { router } from '@inertiajs/react';
 import { toast } from 'sonner';
 

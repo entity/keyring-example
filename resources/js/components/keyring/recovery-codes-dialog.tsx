@@ -1,4 +1,4 @@
-import { confirmEnrollment } from '@entity/keyring/react';
+import { confirmEnrollment } from '@keyringjs/keyring/react';
 import { Copy } from 'lucide-react';
 import { useState } from 'react';
 import type { Recovery } from '@/components/keyring/sign-in-methods';

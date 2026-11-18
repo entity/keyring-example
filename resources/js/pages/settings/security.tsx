@@ -1,4 +1,4 @@
-import type { Session } from '@entity/keyring/react';
+import type { Session } from '@keyringjs/keyring/react';
 import { Head, usePage } from '@inertiajs/react';
 import { KeyRound, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { useEffect } from 'react';

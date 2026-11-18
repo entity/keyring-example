@@ -1,4 +1,4 @@
-import { endOtherSessions, type Session } from '@entity/keyring/react';
+import { endOtherSessions, type Session } from '@keyringjs/keyring/react';
 import { LogOut } from 'lucide-react';
 import { useState } from 'react';
 import Devices, { type DeviceRow } from '@/components/keyring/devices';

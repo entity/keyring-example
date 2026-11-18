@@ -2,7 +2,7 @@ import {
     endSession,
     KeyringRequestError,
     type Session,
-} from '@entity/keyring/react';
+} from '@keyringjs/keyring/react';
 import { router } from '@inertiajs/react';
 import { MonitorSmartphone } from 'lucide-react';
 import { useState } from 'react';
