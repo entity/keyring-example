@@ -1,47 +1,24 @@
 <script setup lang="ts">
 /**
- * The top of the message: an icon in a tinted circle, a short label in the
- * tone's colour, and the heading (the slot). `icon` is the image's name in
- * public/images/emails, without "-tone.png"; it may be Blade, like
- * "{{ $icon }}". The icon is only decoration, so it has no alt text.
+ * The top of the card: a round badge in the email's tone, and the heading
+ * (the slot) under it. The badge is an image in public/images/emails named
+ * "icon-tone.png"; `icon` and `tone` may be Blade, like "{{ $icon }}". It's
+ * only decoration, so it has no alt text.
  */
-import { tones, type Tone } from './tones';
-
-defineProps<{ tone: Tone; icon: string; eyebrow?: string }>();
+defineProps<{ tone: string; icon: string }>();
 </script>
 
 <template>
-    <table role="none" cellpadding="0" cellspacing="0">
-        <tr>
-            <td
-                :class="[
-                    'h-11 w-11 rounded-full text-center align-middle',
-                    tones[tone].badge,
-                ]"
-            >
-                <img
-                    :src="`{{ $images }}/${icon}-${tone}.png`"
-                    width="24"
-                    height="24"
-                    alt=""
-                    class="mx-auto block"
-                />
-            </td>
-            <td class="pl-3 align-middle">
-                <Text
-                    :class="[
-                        'm-0 text-xs/4 font-semibold tracking-wider uppercase',
-                        tones[tone].eyebrow,
-                    ]"
-                >
-                    <slot name="eyebrow">{{ eyebrow }}</slot>
-                </Text>
-            </td>
-        </tr>
-    </table>
-    <Spacer class="h-5" />
+    <img
+        :src="`{{ $images }}/${icon}-${tone}.png`"
+        width="60"
+        height="60"
+        alt=""
+        class="mx-auto -mt-1.5 block"
+    />
+    <Spacer class="h-3.5" />
     <Heading
-        class="m-0 text-2xl/8 font-semibold tracking-tight text-zinc-950 dark:text-zinc-50"
+        class="m-0 text-2xl/[30px] font-semibold tracking-[-0.022em] text-[#111010] sm:text-[21px]/[28px] dark:text-[#f1f2f4]"
     >
         <slot />
     </Heading>

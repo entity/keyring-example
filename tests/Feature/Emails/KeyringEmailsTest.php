@@ -105,7 +105,15 @@ class KeyringEmailsTest extends TestCase
     {
         $mail = $this->render((new VerificationCode('12345678', 10))->toMail(new User));
 
-        $this->assertStringContainsString('1234 5678', $mail['html']);
+        // A box for each digit, in order, with an empty bar between the
+        // groups and nothing between the boxes, so copying them gives the
+        // code alone.
+        $this->assertSame(1, preg_match('#(?:<span[^>]*>[0-9]?</span>){9}#', $mail['html'], $boxes));
+        preg_match_all('#<span[^>]*>([0-9]?)</span>#', $boxes[0], $cells);
+        $this->assertSame(['1', '2', '3', '4', '', '5', '6', '7', '8'], $cells[1]);
+        $this->assertSame('12345678', strip_tags($boxes[0]));
+
+        $this->assertStringContainsString('Your code: 1234 5678', $mail['text']);
         $this->assertStringContainsString('It expires in 10 minutes.', $mail['text']);
     }
 
@@ -181,8 +189,7 @@ class KeyringEmailsTest extends TestCase
 
         $html = $this->render((new SecondFactorFailed(when: 'now'))->toMail(new User))['html'];
 
-        $this->assertStringContainsString('Security alert', $html);
-        $this->assertStringContainsString('shield-alert-critical.png', $html);
+        $this->assertStringContainsString(config('app.url').'/images/emails/shield-alert-critical.png', $html);
     }
 
     public function test_unusual_activity_lists_what_was_noticed()

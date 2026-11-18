@@ -7,12 +7,10 @@
 
 Reset your password
 
-We got a request to reset the password for your account. Choose a new one with the button below.
+We got a request to reset the password for your account. Choose a new one with the button below. This link expires in {!! $minutes !!} minutes.
 
 Reset password:
 {!! $url !!}
-
-This link expires in {!! $minutes !!} minutes.
 
 Didn't ask for this?
 

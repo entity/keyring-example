@@ -7,12 +7,10 @@
 
 Confirm your new email address
 
-Someone asked to use this address for their account. If that was you, confirm it to finish the change.
+Someone asked to use this address for their account. If that was you, confirm it to finish the change. This link expires {!! $expires !!}.
 
 Confirm email address:
 {!! $url !!}
-
-This link expires {!! $expires !!}.
 
 Didn't ask for this?
 

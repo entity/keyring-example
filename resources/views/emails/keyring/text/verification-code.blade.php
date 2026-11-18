@@ -15,7 +15,6 @@ Enter this code to finish adding your email address as a way to sign in. It expi
 Enter this code to finish signing in. It expires in {!! $minutes !!} minutes.
 
 @endif
-
 Your code: {!! $code !!}
 
 Don't share this code with anyone. We'll never ask you for it.

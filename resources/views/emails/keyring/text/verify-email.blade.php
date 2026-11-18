@@ -7,12 +7,10 @@
 
 Verify your email address
 
-Confirm this is your email address to finish setting up your account.
+Confirm this is your email address to finish setting up your account. This link expires in {!! $minutes !!} minutes.
 
 Verify email address:
 {!! $url !!}
-
-This link expires in {!! $minutes !!} minutes.
 
 Didn't create an account?
 

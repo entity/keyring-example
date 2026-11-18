@@ -4,16 +4,15 @@
 -->
 <template>
     <Shell preheader="Someone tried to create an account with this address.">
-        <template #top><Accent tone="info" /></template>
         <template #footer>
             You're getting this email because someone tried to register with
             this address.
         </template>
 
         <NotPlaintext>
-            <Hero tone="info" icon="user-round-check" eyebrow="Welcome back">
-                You already have an account
-            </Hero>
+            <Hero tone="info" icon="user-round-check"
+                >You already have an account</Hero
+            >
         </NotPlaintext>
         <Plaintext>You already have an account</Plaintext>
 
@@ -26,17 +25,29 @@
         <Action href="{{ $loginUrl }}">Sign in</Action>
 
         <Raw>@isset($resetUrl)</Raw>
-        <Note>Forgotten your password?</Note>
-        <Spacer class="h-3" />
-        <Action href="{{ $resetUrl }}" variant="secondary"
-            >Reset your password</Action
-        >
+        <NotPlaintext>
+            <Note>
+                Forgotten your password?
+                <Link
+                    href="{{ $resetUrl }}"
+                    class="font-medium text-[#111010] underline dark:text-[#f1f2f4]"
+                    >Reset your password</Link
+                >
+            </Note>
+        </NotPlaintext>
+        <Plaintext>
+            <div>
+                Forgotten your password? Reset your password:<br /><Raw>{{
+                    $resetUrl
+                }}</Raw>
+            </div>
+        </Plaintext>
         <Raw>@endisset</Raw>
 
-        <Callout title="Wasn't you?">
-            <Text class="m-0 text-sm/6">
+        <template #aside>
+            <Advice title="Wasn't you?">
                 You can ignore this email. Your account hasn't changed.
-            </Text>
-        </Callout>
+            </Advice>
+        </template>
     </Shell>
 </template>

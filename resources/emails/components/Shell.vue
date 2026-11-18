@@ -1,8 +1,13 @@
 <script setup lang="ts">
 /**
- * The frame every email shares: the logo, a card for the message, and a
- * footer saying why it was sent and who to ask for help. The #top slot sits
- * on the card's top edge, for the tone's accent bar.
+ * The frame every email shares, after the sign-in challenge: on a soft
+ * blue backdrop, the logo and app name, then a raised white card with the
+ * message (the slot) and, in a grey strip along its bottom, what to do if
+ * it wasn't you (#aside). A quiet footer under the card says who to ask
+ * for help and why it was sent.
+ *
+ * The backdrop is a solid colour with a gradient over it: mail apps that
+ * drop background images (Gmail) show the colour alone.
  *
  * Its links and images start at Keyring's link root (APP_URL), never at the
  * request: asset() follows the Host header, so a forged one on "forgot
@@ -13,64 +18,79 @@ defineProps<{ preheader?: string }>();
 
 <template>
     <Layout
-        class="bg-zinc-100 dark:bg-zinc-950"
-        body-class="bg-zinc-100 dark:bg-zinc-950"
+        class="bg-[#f2f4fa] bg-[image:radial-gradient(140%_110%_at_50%_100%,#f2f4fa_52%,#bccbf2_100%)] text-[#111010] dark:bg-[#17181c] dark:bg-[image:radial-gradient(140%_110%_at_50%_100%,#17181c_52%,#27356e_100%)] dark:text-[#f1f2f4]"
+        body-class="bg-[#f2f4fa] dark:bg-[#17181c]"
     >
         <Raw>@php($root = \Keyring\Facades\Keyring::linkRoot())</Raw>
         <Raw>@php($images = $root.'/images/emails')</Raw>
         <Preheader v-if="preheader">{{ preheader }}</Preheader>
         <slot name="preheader" />
 
-        <Container class="max-w-xl p-0 py-10 sm:px-4 sm:py-6">
+        <Container
+            class="mx-auto max-w-[560px] px-5 pt-12 pb-14 sm:px-3 sm:pt-8 sm:pb-10"
+        >
             <NotPlaintext>
-                <Section class="px-8 pb-6 sm:px-4">
-                    <table role="none" cellpadding="0" cellspacing="0">
-                        <tr>
-                            <td class="pr-3 align-middle">
-                                <a href="{{ $root }}">
-                                    <img
-                                        src="{{ $images }}/logo.png"
-                                        width="36"
-                                        height="36"
-                                        alt=""
-                                        class="block rounded-[9px]"
-                                    />
-                                </a>
-                            </td>
-                            <td class="align-middle">
-                                <Text
-                                    class="m-0 text-base/6 font-semibold tracking-tight text-zinc-950 dark:text-zinc-50"
-                                >
-                                    <Raw>{{ config('app.name') }}</Raw>
-                                </Text>
-                            </td>
-                        </tr>
-                    </table>
-                </Section>
+                <table
+                    role="none"
+                    cellpadding="0"
+                    cellspacing="0"
+                    align="center"
+                    class="mx-auto"
+                >
+                    <tr>
+                        <td class="pr-2.5 align-middle">
+                            <a href="{{ $root }}" class="block">
+                                <img
+                                    src="{{ $images }}/logo.png"
+                                    width="32"
+                                    height="32"
+                                    alt=""
+                                    class="block rounded-[9px]"
+                                />
+                            </a>
+                        </td>
+                        <td class="align-middle">
+                            <a
+                                href="{{ $root }}"
+                                class="text-[15px]/5 font-semibold tracking-[-0.01em] text-[#111010] no-underline dark:text-[#f1f2f4]"
+                                ><Raw>{{ config('app.name') }}</Raw></a
+                            >
+                        </td>
+                    </tr>
+                </table>
+                <Spacer class="h-6" />
             </NotPlaintext>
             <Plaintext
                 ><Raw>{{ config('app.name') }}</Raw></Plaintext
             >
 
-            <Section
-                class="rounded-2xl border border-solid border-zinc-200 bg-white p-0 dark:border-zinc-800 dark:bg-zinc-900"
+            <div
+                class="rounded-2xl border border-solid border-[#dde1e7] bg-white text-center shadow-[0_0_0_6px_rgba(255,255,255,0.4),0_10px_13px_0_rgba(0,0,0,0.05),0_17px_17px_0_rgba(0,0,0,0.04),0_28px_20px_0_rgba(0,0,0,0.03)] dark:border-[#3b3c40] dark:bg-[#1f2024] dark:shadow-[0_0_0_6px_rgba(255,255,255,0.03),0_24px_48px_-12px_rgba(0,0,0,0.7)]"
             >
-                <NotPlaintext><slot name="top" /></NotPlaintext>
-                <Section class="px-10 py-10 sm:px-6 sm:py-8">
+                <div class="px-10 pt-10 pb-10 sm:px-6 sm:pt-8 sm:pb-8">
                     <slot />
-                </Section>
-            </Section>
+                </div>
 
-            <Section class="px-8 pt-8 sm:px-4">
+                <div
+                    v-if="$slots.aside"
+                    class="rounded-b-[15px] border-0 border-t border-solid border-[#ece8e6] bg-[#faf9f8] px-10 py-6 sm:px-6 sm:py-5 dark:border-[#313338] dark:bg-[#1a1b1f]"
+                >
+                    <slot name="aside" />
+                </div>
+            </div>
+
+            <NotPlaintext><Spacer class="h-8 sm:h-6" /></NotPlaintext>
+
+            <div class="px-6 text-center sm:px-3">
                 <Raw>@isset($contact)</Raw>
                 <Text
-                    class="m-0 mb-3 text-[13px]/5 text-zinc-600 dark:text-zinc-300"
+                    class="m-0 mb-1.5 text-xs/5 text-[#5f5c5b] dark:text-[#afb1b5]"
                 >
                     If this wasn't you and you need help, contact us:
                     <Raw>@isset($contactUrl)</Raw>
                     <Link
                         href="{{ $contactUrl }}"
-                        class="font-semibold text-zinc-950 underline dark:text-zinc-50"
+                        class="font-medium text-[#111010] underline dark:text-[#f1f2f4]"
                         ><Raw>{{ $contact }}</Raw></Link
                     >
                     <Raw>@else</Raw>
@@ -78,22 +98,18 @@ defineProps<{ preheader?: string }>();
                     <Raw>@endisset</Raw>
                 </Text>
                 <Raw>@endisset</Raw>
-                <Text class="m-0 text-xs/5 text-zinc-500 dark:text-zinc-400">
+                <Text class="m-0 text-xs/5 text-[#726f6f] dark:text-[#9c9ea4]">
                     <slot name="footer">
                         You're getting this email because it's about the
                         security of your account.
                     </slot>
                 </Text>
-                <Text
-                    class="m-0 mt-3 text-xs/5 text-zinc-500 dark:text-zinc-400"
-                >
-                    <Link
-                        href="{{ $root }}"
-                        class="text-zinc-500 no-underline dark:text-zinc-400"
+                <Plaintext>
+                    <Link href="{{ $root }}"
                         ><Raw>{{ config('app.name') }}</Raw></Link
                     >
-                </Text>
-            </Section>
+                </Plaintext>
+            </div>
         </Container>
     </Layout>
 </template>

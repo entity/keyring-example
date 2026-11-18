@@ -13,10 +13,9 @@ Sign in:
 {!! $loginUrl !!}
 @isset($resetUrl)
 
-Forgotten your password?
-
-Reset your password:
+Forgotten your password? Reset your password:
 {!! $resetUrl !!}
+
 @endisset
 
 Wasn't you?

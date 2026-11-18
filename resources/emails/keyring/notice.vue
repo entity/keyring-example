@@ -1,7 +1,7 @@
 <!--
   Every security notice: "your password was changed", "new sign-in" and the
   rest. App\Notifications\Keyring\NoticeMail gives each its tone, icon,
-  label, details and advice, so one template covers all twelve.
+  details and advice, so one template covers all twelve.
 -->
 <template>
     <Shell>
@@ -11,21 +11,10 @@
             >
         </template>
 
-        <template #top>
-            <ToneSwitch v-slot="{ tone }">
-                <Accent :tone="tone" />
-            </ToneSwitch>
-        </template>
-
         <NotPlaintext>
-            <ToneSwitch v-slot="{ tone }">
-                <Hero :tone="tone" icon="{{ $icon }}">
-                    <template #eyebrow
-                        ><Raw>{{ $eyebrow }}</Raw></template
-                    >
-                    <Raw>{{ $subject }}</Raw>
-                </Hero>
-            </ToneSwitch>
+            <Hero tone="{{ $tone }}" icon="{{ $icon }}">
+                <Raw>{{ $subject }}</Raw>
+            </Hero>
         </NotPlaintext>
         <Plaintext
             ><Raw>{{ $subject }}</Raw></Plaintext
@@ -36,11 +25,11 @@
         >
 
         <Raw>@if ($reasons !== [])</Raw>
-        <Callout tone="warning" title="What we noticed">
+        <Callout title="What we noticed">
             <Raw>@foreach ($reasons as $reason)</Raw>
             <NotPlaintext>
-                <Text class="m-0 mt-1 text-sm/6">
-                    &bull;&nbsp; <Raw>{{ $reason }}</Raw>
+                <Text class="m-0 mt-1 text-[13px]/5">
+                    <Raw>{{ $reason }}</Raw>
                 </Text>
             </NotPlaintext>
             <Plaintext
@@ -59,13 +48,13 @@
         </Action>
         <Raw>@endisset</Raw>
 
-        <Callout>
-            <template #title
-                ><Raw>{{ $adviceTitle }}</Raw></template
-            >
-            <Text class="m-0 text-sm/6">
+        <template #aside>
+            <Advice>
+                <template #title
+                    ><Raw>{{ $adviceTitle }}</Raw></template
+                >
                 <Raw>{{ $advice }}</Raw>
-            </Text>
-        </Callout>
+            </Advice>
+        </template>
     </Shell>
 </template>
