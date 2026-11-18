@@ -2,6 +2,7 @@ import { usePasskeyLogin } from '@entity/keyring/react';
 import { Form, Head } from '@inertiajs/react';
 import { KeyRound } from 'lucide-react';
 import { useState } from 'react';
+import DemoLocationPicker from '@/components/demo-location-picker';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
@@ -10,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { register } from '@/routes';
+import { home, register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 
@@ -157,6 +158,13 @@ export default function Login({
                     </>
                 )}
             </Form>
+
+            <p className="mt-6 text-center text-sm text-muted-foreground">
+                Trying the demo? The accounts are on the{' '}
+                <TextLink href={home()}>home page</TextLink>.
+            </p>
+
+            <DemoLocationPicker />
         </>
     );
 }
