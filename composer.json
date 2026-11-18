@@ -11,7 +11,7 @@
     "require": {
         "php": "^8.5",
         "bacon/bacon-qr-code": "^3.0",
-        "entity/keyring": "@dev",
+        "keyring/keyring": "@dev",
         "inertiajs/inertia-laravel": "^3.0",
         "laravel/framework": "^13.17",
         "laravel/octane": "^2.23",
