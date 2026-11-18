@@ -43,7 +43,7 @@ Keyring clears out old devices, sessions, email changes and log entries with `ke
 
 Passkeys need a secure context. `http://localhost` counts, so open the app as `localhost`, not `127.0.0.1`. `APP_URL` has to match the address in your browser, because Keyring builds the passkey origin and every emailed link from it.
 
-Emails (codes, email change links, security notices) go to `storage/logs/laravel.log`. `composer dev` shows that log as it's written. To see how they look, open `http://localhost:8000/emails` while running locally: it lists every email Keyring sends and shows each with sample content.
+Emails (codes, email change links, security notices) go to `storage/logs/laravel.log`. `composer dev` shows that log as it's written. To see how they look, open `http://localhost:8000/emails` while running locally: a gallery of every email the app sends, Keyring's and Laravel's verification and password reset emails, each with sample content (see [Emails](#emails)).
 
 ## Risk signals
 
@@ -128,7 +128,9 @@ The five emails a flow needs (the emailed code, the two for an email change, and
 
 Blade escapes what the HTML views print, so a name someone typed for their security key can't add a link to a genuine security email. The plain text views print values as they are, since there's no markup to protect.
 
-While developing, [`/emails`](http://localhost:8000/emails) shows a gallery of every email with sample content, `/emails/{type}` one of them and `/emails/{type}/text` its plain text. The pages only exist when `APP_ENV` is `local`.
+While developing, [`/emails`](http://localhost:8000/emails) shows a gallery of every email with sample content, grouped into security alerts, confirmations, the emails a flow needs and Laravel's two, with `/emails/{type}` showing one of them and `/emails/{type}/text` its plain text. The pages only exist when `APP_ENV` is `local`. `App\Support\EmailGallery` makes the samples.
+
+The logo, icons and links in every email start at `APP_URL` (`Keyring::linkRoot()`), never at the request that caused the email: `asset()` would follow the `Host` header, and anyone asking for a password reset can send a forged one.
 
 ## Demo accounts
 
