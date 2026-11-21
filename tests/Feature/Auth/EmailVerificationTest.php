@@ -35,6 +35,10 @@ class EmailVerificationTest extends TestCase
 
     public function test_signing_in_from_the_browser_that_followed_the_link_verifies_the_address()
     {
+        // The link is built again below to compare, so its expiry can't
+        // move on by a second in between.
+        $this->freezeSecond();
+
         $user = User::factory()->unverified()->create();
 
         Event::fake([Verified::class]);
