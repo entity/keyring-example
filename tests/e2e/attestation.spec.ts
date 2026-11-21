@@ -315,7 +315,8 @@ test('adds a security key whose attestation chains to a root the app trusts, and
     ).toBe(true);
     expect(attempt.status).toBe(200);
 
-    await saveRecoveryCodes(page);
+    await saveRecoveryCodes(page, '/dashboard');
+    await page.goto('/settings/security');
     await expect(securityKeys(page)).toHaveCount(1);
     expect(authenticators(user)).toContainEqual({
         factor: 'security-key',
@@ -358,7 +359,7 @@ test('adds an attested key in a browser without the newer json helpers', async (
     expect(attempt.sent.certificates).toHaveLength(1);
     expect(attempt.status).toBe(200);
 
-    await saveRecoveryCodes(page);
+    await saveRecoveryCodes(page, '/dashboard');
     expect(authenticators(user)).toContainEqual({
         factor: 'security-key',
         attestation: 'basic',
@@ -384,7 +385,8 @@ test('adds an older u2f key the same way', async ({ page }) => {
     // The key can't check who is holding it, and doesn't need to: the
     // session proved the password when it signed in, and adding the key
     // counts as using it.
-    await saveRecoveryCodes(page);
+    await saveRecoveryCodes(page, '/dashboard');
+    await page.goto('/settings/security');
     await expect(securityKeys(page)).toHaveCount(1);
     expect(authenticators(user)).toContainEqual({
         factor: 'security-key',
@@ -444,7 +446,8 @@ test('adds a model that is on the list', async ({ page }) => {
     expect(attempt.sent.aaguid).toBe(chromium.aaguid);
     expect(attempt.status).toBe(200);
 
-    await saveRecoveryCodes(page);
+    await saveRecoveryCodes(page, '/dashboard');
+    await page.goto('/settings/security');
     await expect(securityKeys(page)).toHaveCount(1);
     expect(authenticators(user)).toContainEqual({
         factor: 'security-key',
@@ -494,7 +497,7 @@ test('still adds a passkey, and signs in with it, while security keys need attes
     expect(attempt.sent.format).toBe('none');
     expect(attempt.status).toBe(200);
 
-    await saveRecoveryCodes(page);
+    await saveRecoveryCodes(page, '/dashboard');
     expect(authenticators(user)).toContainEqual(
         expect.objectContaining({ factor: 'passkey', attestation: null }),
     );
@@ -518,7 +521,7 @@ test('asks for no attestation once the settings are gone, as the demo ships', as
     expect(attempt.sent.format).toBe('none');
     expect(attempt.status).toBe(200);
 
-    await saveRecoveryCodes(page);
+    await saveRecoveryCodes(page, '/dashboard');
     expect(authenticators(user)).toContainEqual(
         expect.objectContaining({ factor: 'security-key', attestation: null }),
     );

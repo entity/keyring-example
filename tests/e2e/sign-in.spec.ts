@@ -51,7 +51,7 @@ test('sends someone with only a password to add a second factor', async ({
     await expectAskedForSecondFactor(page);
 
     await addVirtualAuthenticator(page);
-    await addKey(page, 'Passkey');
+    await addKey(page, 'Passkey', '/settings/profile');
     await expect(
         page.getByText('Add a second factor to carry on'),
     ).toBeHidden();
@@ -135,7 +135,7 @@ test("signs in with a passkey from the email field's autofill", async ({
 
     await signInWithPassword(page, user.email, user.password);
     await expectAskedForSecondFactor(page);
-    await addKey(page, 'Passkey');
+    await addKey(page, 'Passkey', '/dashboard');
 
     // The login page asks the browser for passkeys as soon as it loads, and
     // the virtual authenticator offers one straight away.
@@ -153,7 +153,7 @@ test('signs in with the passkey button while autofill is waiting', async ({
 
     await signInWithPassword(page, user.email, user.password);
     await expectAskedForSecondFactor(page);
-    await addKey(page, 'Passkey');
+    await addKey(page, 'Passkey', '/dashboard');
 
     // Nothing answers yet, so autofill's request stays open until the button
     // replaces it. Then the key answers the button's request.
@@ -172,7 +172,7 @@ test('asks for the security key after the password', async ({ page }) => {
 
     await signInWithPassword(page, user.email, user.password);
     await expectAskedForSecondFactor(page);
-    await addKey(page, 'Security key');
+    await addKey(page, 'Security key', '/dashboard');
 
     await signOut(page);
     await signInWithPassword(page, user.email, user.password);

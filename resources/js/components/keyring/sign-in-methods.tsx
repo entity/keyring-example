@@ -107,6 +107,8 @@ type Pending = {
 export type Recovery = {
     codes: string[];
     enrollment?: Record<string, any>;
+    /** The page the user was going to before being sent to add a method. */
+    continue?: string;
 } | null;
 
 export default function SignInMethods({
@@ -145,10 +147,15 @@ export default function SignInMethods({
         (authenticator) => authenticator.factor === 'recovery',
     );
 
-    // Reloading remounts the page, so dialogs reload once they close.
-    function showCodesOrReload(codes?: string[] | null) {
+    // Reloading remounts the page, so dialogs reload once they close. A user
+    // `keyring.enrolled` sent here gets `continue` with their first method,
+    // the page they were going to, and carries on there once the codes are
+    // saved.
+    function showCodesOrReload(codes?: string[] | null, continueTo?: string) {
         if (codes) {
-            setRecovery({ codes });
+            setRecovery({ codes, continue: continueTo });
+        } else if (continueTo) {
+            router.visit(continueTo);
         } else {
             router.reload();
         }
@@ -174,7 +181,7 @@ export default function SignInMethods({
                 () => enroll(factor, { sign_out_others: alsoSignOut }),
                 { reload: false },
             );
-            showCodesOrReload(result?.recoveryCodes);
+            showCodesOrReload(result?.recoveryCodes, result?.continue);
         } else if (factor === 'recovery') {
             // New codes only replace the old ones once the user says they saved them.
             const started = await run(() => beginEnrollment('recovery'), {
@@ -365,9 +372,9 @@ export default function SignInMethods({
             <ConfirmCodeDialog
                 pending={pending}
                 signOutOthers={alsoSignOut}
-                onDone={(codes) => {
+                onDone={(codes, continueTo) => {
                     setPending(null);
-                    showCodesOrReload(codes);
+                    showCodesOrReload(codes, continueTo);
                 }}
             />
 
@@ -375,8 +382,14 @@ export default function SignInMethods({
                 recovery={recovery}
                 signOutOthers={alsoSignOut}
                 onClose={() => {
+                    const continueTo = recovery?.continue;
                     setRecovery(null);
-                    router.reload();
+
+                    if (continueTo) {
+                        router.visit(continueTo);
+                    } else {
+                        router.reload();
+                    }
                 }}
             />
         </InsetCard>
@@ -593,7 +606,7 @@ function ConfirmCodeDialog({
 }: {
     pending: Pending;
     signOutOthers: boolean;
-    onDone: (recoveryCodes: string[] | null) => void;
+    onDone: (recoveryCodes: string[] | null, continueTo?: string) => void;
 }) {
     const [code, setCode] = useState('');
     const [processing, setProcessing] = useState(false);
@@ -659,7 +672,10 @@ function ConfirmCodeDialog({
 
                         if (result) {
                             setCode('');
-                            onDone(result.recoveryCodes ?? null);
+                            onDone(
+                                result.recoveryCodes ?? null,
+                                result.continue,
+                            );
                         }
                     }}
                 >
