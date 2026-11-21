@@ -88,7 +88,9 @@ export default function RecoveryCodesDialog({
                     </Button>
                     <Button onClick={() => void done()} disabled={saving}>
                         {saving && <Spinner />}
-                        I’ve saved these
+                        {recovery?.continue
+                            ? 'I’ve saved these, continue'
+                            : 'I’ve saved these'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

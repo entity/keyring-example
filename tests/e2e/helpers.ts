@@ -313,26 +313,46 @@ export async function signOut(page: Page): Promise<void> {
     await page.context().clearCookies();
 }
 
-/** Add a passkey or security key from Settings → Security. */
+/**
+ * Add a passkey or security key from Settings → Security. Pass the path a
+ * user sent here to add their first method was going to, which they carry
+ * on to once the codes are saved.
+ */
 export async function addKey(
     page: Page,
     label: 'Passkey' | 'Security key',
+    continueTo?: string,
 ): Promise<void> {
     await page.goto('/settings/security');
     await page.getByRole('button', { name: 'Add', exact: true }).click();
     await page.getByRole('menuitem', { name: label }).click();
-    await saveRecoveryCodes(page);
+    await saveRecoveryCodes(page, continueTo);
 }
 
 /**
  * Close the recovery codes a first passkey or security key comes with.
  * Adding the key counts as using it, so with the password the session
  * signed in with there's nothing more to confirm before the page reloads.
+ * A user `keyring.enrolled` sent to add it carries on to `continueTo`, the
+ * page they were going to, instead.
  */
-export async function saveRecoveryCodes(page: Page): Promise<void> {
+export async function saveRecoveryCodes(
+    page: Page,
+    continueTo?: string,
+): Promise<void> {
     await expect(
         page.getByRole('heading', { name: 'Save your recovery codes' }),
     ).toBeVisible();
+
+    if (continueTo) {
+        await page
+            .getByRole('button', { name: 'I’ve saved these, continue' })
+            .click();
+        await expect(page).toHaveURL(new URL(continueTo, page.url()).href);
+
+        return;
+    }
+
     await page.getByRole('button', { name: 'I’ve saved these' }).click();
 
     // Wait until it's all done.

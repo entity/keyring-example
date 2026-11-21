@@ -129,7 +129,13 @@ class KeyringServiceProvider extends ServiceProvider
             // from Tokyo to see it.
             NewCountry::class,
             ImpossibleTravel::class,
-            // Every password sign in asks Have I Been Pwned, so it's only on
+            // CredentialStuffing stays off: it scores failures on other
+            // accounts from the same IP address, which a stranger on the
+            // owner's office or mobile network can add, and the sums above
+            // leave no room for its 40.
+            //
+            // BreachedPassword asks Have I Been Pwned at every password sign
+            // in, so it's only on
             // with BREACHED_PASSWORD_CHECK=true, not with Keyring's default
             // (null), which only checks new passwords in production. A
             // password it finds holds the user on the security page until

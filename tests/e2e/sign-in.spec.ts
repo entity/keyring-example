@@ -51,13 +51,35 @@ test('sends someone with only a password to add a second factor', async ({
     await expectAskedForSecondFactor(page);
 
     await addVirtualAuthenticator(page);
-    await addKey(page, 'Passkey');
+    await addKey(page, 'Passkey', '/settings/profile');
+    await page.goto('/settings/security');
     await expect(
         page.getByText('Add a second factor to carry on'),
     ).toBeHidden();
 
     await page.goto('/dashboard');
     await expect(page).toHaveURL(/\/dashboard/);
+});
+
+test('stays on the security page when nothing sent them there', async ({
+    page,
+}) => {
+    const user = createUser();
+
+    // Going there as a guest makes it the page to come back to after
+    // signing in, so Keyring never sends them anywhere to remember.
+    await page.goto('/settings/security');
+    await expect(page).toHaveURL(/\/login/);
+    await page.getByLabel('Email address').fill(user.email);
+    await page.getByLabel('Password', { exact: true }).fill(user.password);
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await expectAskedForSecondFactor(page);
+
+    await addVirtualAuthenticator(page);
+    await addKey(page, 'Passkey');
+    await expect(
+        page.getByRole('button', { name: 'I’ve saved these, continue' }),
+    ).toHaveCount(0);
 });
 
 test('treats an emailed code as an extra step, not as a second factor', async ({
@@ -135,7 +157,7 @@ test("signs in with a passkey from the email field's autofill", async ({
 
     await signInWithPassword(page, user.email, user.password);
     await expectAskedForSecondFactor(page);
-    await addKey(page, 'Passkey');
+    await addKey(page, 'Passkey', '/dashboard');
 
     // The login page asks the browser for passkeys as soon as it loads, and
     // the virtual authenticator offers one straight away.
@@ -153,7 +175,7 @@ test('signs in with the passkey button while autofill is waiting', async ({
 
     await signInWithPassword(page, user.email, user.password);
     await expectAskedForSecondFactor(page);
-    await addKey(page, 'Passkey');
+    await addKey(page, 'Passkey', '/dashboard');
 
     // Nothing answers yet, so autofill's request stays open until the button
     // replaces it. Then the key answers the button's request.
@@ -172,7 +194,7 @@ test('asks for the security key after the password', async ({ page }) => {
 
     await signInWithPassword(page, user.email, user.password);
     await expectAskedForSecondFactor(page);
-    await addKey(page, 'Security key');
+    await addKey(page, 'Security key', '/dashboard');
 
     await signOut(page);
     await signInWithPassword(page, user.email, user.password);
