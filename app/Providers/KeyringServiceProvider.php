@@ -132,8 +132,10 @@ class KeyringServiceProvider extends ServiceProvider
             // CredentialStuffing stays off: it scores failures on other
             // accounts from the same IP address, which a stranger on the
             // owner's office or mobile network can add, and the sums above
-            // leave it no room.
-            // Every password sign in asks Have I Been Pwned, so it's only on
+            // leave no room for its 40.
+            //
+            // BreachedPassword asks Have I Been Pwned at every password sign
+            // in, so it's only on
             // with BREACHED_PASSWORD_CHECK=true, not with Keyring's default
             // (null), which only checks new passwords in production. A
             // password it finds holds the user on the security page until

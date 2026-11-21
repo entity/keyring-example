@@ -150,7 +150,10 @@ export default function SignInMethods({
     // Reloading remounts the page, so dialogs reload once they close. A user
     // `keyring.enrolled` sent here gets `continue` with their first method,
     // the page they were going to, and carries on there once the codes are
-    // saved.
+    // saved, with a full page load, since that page may not be an Inertia
+    // one. An emailed code gets `continue` too, with no codes, though it
+    // isn't a second factor, so visiting it sends them straight back here
+    // as a reload would, keeping the toast.
     function showCodesOrReload(codes?: string[] | null, continueTo?: string) {
         if (codes) {
             setRecovery({ codes, continue: continueTo });
@@ -386,7 +389,7 @@ export default function SignInMethods({
                     setRecovery(null);
 
                     if (continueTo) {
-                        router.visit(continueTo);
+                        window.location.assign(continueTo);
                     } else {
                         router.reload();
                     }

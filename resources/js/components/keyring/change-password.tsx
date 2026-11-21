@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 
 /**
  * PUT /user/password, which Keyring answers with a flashed status and a
- * redirect back here. It signs out the other sessions too.
+ * redirect back here, or for a user held until they changed it, on to the
+ * page they were going to. It signs out the other sessions too.
  */
 export default function ChangePassword({
     onCancel,
