@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a62f67bd47c6081e0e9966a93f17a7ae",
+    "content-hash": "c0ab5a38935172efab67c171d2c44e5d",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -1286,16 +1286,16 @@
         },
         {
             "name": "keyring/keyring",
-            "version": "v0.1.0",
+            "version": "v0.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/entity/keyring.git",
-                "reference": "1a891b915b41d0bf1f6d638ebd2601602dc729cd"
+                "reference": "eafb9ace34d7c27dd1fc2cc1be2c1b9313e3e8d9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/entity/keyring/zipball/1a891b915b41d0bf1f6d638ebd2601602dc729cd",
-                "reference": "1a891b915b41d0bf1f6d638ebd2601602dc729cd",
+                "url": "https://api.github.com/repos/entity/keyring/zipball/eafb9ace34d7c27dd1fc2cc1be2c1b9313e3e8d9",
+                "reference": "eafb9ace34d7c27dd1fc2cc1be2c1b9313e3e8d9",
                 "shasum": ""
             },
             "require": {
@@ -1343,6 +1343,7 @@
                 "MIT"
             ],
             "description": "Factor-driven authentication for Laravel: many authenticators per user, devices, sessions, step-up and risk.",
+            "homepage": "https://github.com/entity/keyring",
             "keywords": [
                 "2fa",
                 "MFA",
@@ -1353,10 +1354,12 @@
                 "webauthn"
             ],
             "support": {
+                "docs": "https://github.com/entity/keyring/tree/main/docs",
                 "issues": "https://github.com/entity/keyring/issues",
-                "source": "https://github.com/entity/keyring/tree/v0.1.0"
+                "security": "https://github.com/entity/keyring/security/policy",
+                "source": "https://github.com/entity/keyring"
             },
-            "time": "2026-11-18T16:45:53+00:00"
+            "time": "2026-11-21T15:08:29+00:00"
         },
         {
             "name": "laminas/laminas-diactoros",
