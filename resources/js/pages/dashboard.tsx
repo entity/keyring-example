@@ -206,7 +206,7 @@ export default function Dashboard() {
                     <p className="text-sm text-muted-foreground">
                         Everything here is Keyring, swapped in for Fortify. The{' '}
                         <a
-                            href="https://github.com/entity/keyring/tree/main/docs"
+                            href="https://keyringphp.com/docs"
                             target="_blank"
                             rel="noreferrer"
                             className="underline underline-offset-4"

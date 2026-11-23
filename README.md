@@ -1,6 +1,6 @@
 # Keyring example
 
-Laravel's React starter kit with Fortify taken out and [Keyring](https://github.com/entity/keyring) put in. Use it to play with Keyring, or to see what moving an app from Fortify to Keyring involves. The welcome page at `http://localhost:8000` has the [demo accounts](#demo-accounts) (with a QR code for the authenticator app) and a short tour, and the dashboard has a card for each thing to try, saying which need a setting turned on.
+Laravel's React starter kit with Fortify taken out and [Keyring](https://github.com/keyringphp/keyring) put in. Use it to play with Keyring, or to see what moving an app from Fortify to Keyring involves. The welcome page at `http://localhost:8000` has the [demo accounts](#demo-accounts) (with a QR code for the authenticator app) and a short tour, and the dashboard has a card for each thing to try, saying which need a setting turned on.
 
 What you can try:
 
@@ -39,7 +39,7 @@ Emails (codes, email change links, security notices) go to `storage/logs/laravel
 
 ## Risk signals
 
-`KeyringServiceProvider` runs all but one of Keyring's [risk signals](https://github.com/entity/keyring/blob/main/docs/risk.md), and Keyring's own response does the rest: a second factor at medium, an email to the owner from high, a refused sign in at critical.
+`KeyringServiceProvider` runs all but one of Keyring's [risk signals](https://github.com/keyringphp/keyring/blob/main/docs/risk.md), and Keyring's own response does the rest: a second factor at medium, an email to the owner from high, a refused sign in at critical.
 
 | Signal                                                                                                        | Here                                                                                                                                                                |
 | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -64,7 +64,7 @@ KEYRING_LOCATOR=cloudflare   # Cloudflare's CF-IPCountry (and city and coordinat
 
 `demo` is `App\Support\DemoLocator`, a demo aid and nothing more: it puts each request wherever the login page's picker says (a cookie, London until you pick), so the location signals can be tried on a machine where every request comes from `127.0.0.1`. Anyone can set that cookie, so it's only taken when `APP_ENV` is `local` or `testing`. Anywhere else `KEYRING_LOCATOR=demo` means no locator, and the picker and its route are gone. Paris after London is a new country, which asks for a second factor. Tokyo or New York straight after is impossible travel too, and the sign in is refused (and logged, and emailed). Locations also show on Settings → Security.
 
-`cloudflare` is Keyring's `HeaderLocator`. Only use it when every request has to come through Cloudflare: anyone who can reach the app directly can send those headers and say where they are. For a real lookup by IP address, see [Locations with stevebauman/location](https://github.com/entity/keyring/blob/main/docs/recipes.md#locations-with-stevebaumanlocation).
+`cloudflare` is Keyring's `HeaderLocator`. Only use it when every request has to come through Cloudflare: anyone who can reach the app directly can send those headers and say where they are. For a real lookup by IP address, see [Locations with stevebauman/location](https://github.com/keyringphp/keyring/blob/main/docs/recipes.md#locations-with-stevebaumanlocation).
 
 ### Breached passwords
 

@@ -50,12 +50,12 @@ const mainNavItems: NavItem[] = [
 const rightNavItems: NavItem[] = [
     {
         title: 'Repository',
-        href: 'https://github.com/entity/keyring-example',
+        href: 'https://github.com/keyringphp/example',
         icon: Folder,
     },
     {
         title: 'Keyring docs',
-        href: 'https://github.com/entity/keyring/tree/main/docs',
+        href: 'https://keyringphp.com/docs',
         icon: BookOpen,
     },
 ];
