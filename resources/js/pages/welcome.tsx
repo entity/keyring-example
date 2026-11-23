@@ -28,8 +28,8 @@ type Props = {
     };
 };
 
-const docs = 'https://github.com/entity/keyring/tree/main/docs';
-const repository = 'https://github.com/entity/keyring-example';
+const docs = 'https://keyringphp.com/docs';
+const repository = 'https://github.com/keyringphp/example';
 
 const tryThis = [
     {
